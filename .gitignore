@@ -1,0 +1,45 @@
+# --- Java ---
+*.class
+*.log
+*.jar
+*.war
+*.ear
+
+# --- Gradle ---
+.gradle/
+build/
+out/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# --- OS Files ---
+.DS_Store
+Thumbs.db
+
+# --- Minecraft Mod Specific ---
+run/
+runs/
+logs/
+crash-reports/
+config/
+debug/
+eula.txt
+mods/
+saves/
+resourcepacks/
+
+# --- User-specific files ---
+*.swp
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# --- Optional cache ---
+.cache/

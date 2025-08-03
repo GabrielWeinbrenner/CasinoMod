@@ -1,0 +1,13 @@
+{
+  "itemGroup.casinomod": "Example Mod Tab",
+  "block.casinomod.example_block": "Example Block",
+  "item.casinomod.example_item": "Example Item",
+
+  "casinomod.configuration.title": "CasinoMod Configs",
+  "casinomod.configuration.section.casinomod.common.toml": "CasinoMod Configs",
+  "casinomod.configuration.section.casinomod.common.toml.title": "CasinoMod Configs",
+  "casinomod.configuration.items": "Item List",
+  "casinomod.configuration.logDirtBlock": "Log Dirt Block",
+  "casinomod.configuration.magicNumberIntroduction": "Magic Number Text",
+  "casinomod.configuration.magicNumber": "Magic Number"
+}
