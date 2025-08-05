@@ -20,13 +20,41 @@ public class Card {
   public String getCardName() {
     String name =
         switch (value) {
-          case 1 -> "A";
-          case 11 -> "J";
-          case 12 -> "Q";
-          case 13 -> "K";
+          case 1 -> "ace";
+          case 11 -> "j";
+          case 12 -> "q";
+          case 13 -> "k";
           default -> String.valueOf(value);
         };
-    return name + "_" + suit.name().toLowerCase();
+    return suit.name().toLowerCase() + "_" + name;
+  }
+
+  @Override
+  public String toString() {
+    return getCardName();
+  }
+
+  public static Card fromName(String name) {
+    String[] parts = name.split("_");
+    if (parts.length != 2) {
+      throw new IllegalArgumentException("Invalid card name: " + name);
+    }
+
+    String suitStr = parts[0];
+    String rankStr = parts[1];
+
+    Suit suit = Suit.valueOf(suitStr.toUpperCase());
+
+    int value =
+        switch (rankStr) {
+          case "ace" -> 1;
+          case "j" -> 11;
+          case "q" -> 12;
+          case "k" -> 13;
+          default -> Integer.parseInt(rankStr);
+        };
+
+    return new Card(value, suit);
   }
 
   public int getBlackjackValue() {

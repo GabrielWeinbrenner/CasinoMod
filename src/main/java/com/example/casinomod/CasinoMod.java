@@ -3,8 +3,10 @@ package com.example.casinomod;
 import com.example.casinomod.block.ModBlocks;
 import com.example.casinomod.block.entity.ModBlockEntities;
 import com.example.casinomod.item.ModItems;
+import com.example.casinomod.network.ModMessages;
 import com.example.casinomod.screen.ModMenuTypes;
 import com.example.casinomod.screen.custom.DealerScreen;
+import com.example.casinomod.util.ServerTaskScheduler;
 import com.mojang.logging.LogUtils;
 
 import org.slf4j.Logger;
@@ -26,6 +28,7 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
@@ -68,6 +71,8 @@ public class CasinoMod {
     ModItems.register(modEventBus);
     ModMenuTypes.register(modEventBus);
     ModBlockEntities.register(modEventBus);
+    ModMessages.register(modEventBus);
+
     // Register the Deferred Register to the mod event bus so tabs get registered
     //        CREATIVE_MODE_TABS.register(modEventBus);
 
@@ -119,6 +124,11 @@ public class CasinoMod {
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
       event.register(ModMenuTypes.DEALER_MENU.get(), DealerScreen::new);
+    }
+
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+      ServerTaskScheduler.tick(event.getServer().getTickCount());
     }
   }
 }
