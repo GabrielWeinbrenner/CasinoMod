@@ -78,21 +78,49 @@ public class BlackjackHandler {
       BlockPos pos,
       DealerBlockEntity dealerBe,
       BlackjackGame game) {
+
     if (!(level instanceof ServerLevel serverLevel)) return;
-    boolean dealerContinues = false;
-    if (game.getPhase() == BlackjackGame.GamePhase.DEALER_TURN) {
-      dealerContinues = game.hitDealer();
-      updateBlock(level, pos, dealerBe);
-    }
+
+    ServerTaskScheduler.schedule(
+        serverLevel.getServer(),
+        () -> {
+          updateBlock(level, pos, dealerBe);
+          CasinoMod.LOGGER.debug("[DealerTurn] Hole card revealed.");
+
+          runDealerDrawLoop(player, level, pos, dealerBe, game, serverLevel);
+        },
+        20);
+  }
+
+  private static void runDealerDrawLoop(
+      ServerPlayer player,
+      Level level,
+      BlockPos pos,
+      DealerBlockEntity dealerBe,
+      BlackjackGame game,
+      ServerLevel serverLevel) {
+
+    boolean dealerContinues = game.hitDealer();
+    updateBlock(level, pos, dealerBe);
+
     if (dealerContinues) {
       ServerTaskScheduler.schedule(
           serverLevel.getServer(),
-          () -> simulateDealerTurn(player, level, pos, dealerBe, game),
-          10);
+          () -> runDealerDrawLoop(player, level, pos, dealerBe, game, serverLevel),
+          20);
     } else {
       BlackjackGame.Result result = game.determineResult();
       handleResult(result, player, level, pos, dealerBe, game);
-      updateBlock(level, pos, dealerBe);
+
+      ServerTaskScheduler.schedule(
+          serverLevel.getServer(),
+          () -> {
+            dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
+            game.reset();
+            updateBlock(level, pos, dealerBe);
+            CasinoMod.LOGGER.debug("[DealerTurn] Game reset after dealer finishes.");
+          },
+          40);
     }
   }
 
