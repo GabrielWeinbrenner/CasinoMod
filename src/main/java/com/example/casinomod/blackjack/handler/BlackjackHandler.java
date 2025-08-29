@@ -42,8 +42,16 @@ public class BlackjackHandler {
             () -> drawCard(game, game.getPlayerHand(), "Player (2nd)", level, pos, dealerBe),
             () -> drawCard(game, game.getDealerHand(), "Dealer (2nd)", level, pos, dealerBe),
             () -> {
-              game.setPhase(BlackjackGame.GamePhase.PLAYER_TURN);
-              CasinoMod.LOGGER.debug("[BlackjackHandler] All cards dealt. Player turn begins.");
+              // Check for dealer blackjack after all initial cards are dealt
+              if (game.isDealerBlackjack()) {
+                CasinoMod.LOGGER.debug("[BlackjackHandler] Dealer has blackjack!");
+                game.setPhase(BlackjackGame.GamePhase.FINISHED);
+                BlackjackGame.Result result = game.determineResult();
+                handleResult(result, player, level, pos, dealerBe, game);
+              } else {
+                game.setPhase(BlackjackGame.GamePhase.PLAYER_TURN);
+                CasinoMod.LOGGER.debug("[BlackjackHandler] All cards dealt. Player turn begins.");
+              }
             });
 
     scheduleDrawSteps(drawSteps, serverLevel, 0);

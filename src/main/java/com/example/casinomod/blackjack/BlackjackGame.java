@@ -203,6 +203,10 @@ public class BlackjackGame implements ValueIOSerializable {
     return playerHand.size() == 2 && getHandValue(playerHand) == 21;
   }
 
+  public boolean isDealerBlackjack() {
+    return dealerHand.size() == 2 && getHandValue(dealerHand) == 21;
+  }
+
   // ─────────────── Helpers ───────────────
 
   public Card draw() {
