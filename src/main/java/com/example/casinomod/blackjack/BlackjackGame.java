@@ -217,7 +217,7 @@ public class BlackjackGame implements ValueIOSerializable {
       Collections.shuffle(deck, random);
       CasinoMod.LOGGER.info("[BlackjackGame] Emergency reshuffled deck with {} cards", deck.size());
     }
-    
+
     Card card = deck.removeFirst();
     CasinoMod.LOGGER.trace("[BlackjackGame] Drawing card: {}", card);
     return card;

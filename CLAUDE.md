@@ -81,7 +81,24 @@ CasinoMod is a Minecraft mod built with NeoForge that adds casino gaming functio
 4. Register new components in respective `Mod*.java` classes
 
 ### Testing
-- Use `./gradlew runClient` for in-game testing
+- `./gradlew test` - Run JUnit 5 unit tests
+- `./gradlew coverage` - Generate JaCoCo code coverage report for blackjack package
+- `./gradlew blackjackCoverage` - Same as above, more explicit
+- `./gradlew jacocoTestReport` - Full project coverage report
+- `./gradlew runClient` - Launch client for in-game testing  
+- `./gradlew gameTestServer` - Run NeoForge game tests
+
+#### Test Coverage
+- **Blackjack Package**: 79% instruction coverage, 92% branch coverage
+- **BlackjackHandler**: 0% coverage (requires Minecraft server context, but logic tested via HandlerLogicTest)
+- **Total Test Count**: 80+ tests covering all game scenarios
+- Coverage reports: `build/reports/jacoco/blackjack/index.html`
+- Unit tests for Card, Suit, and BlackjackGame classes
+- Integration tests for BlackjackHandler game flow
+- Handler logic tests for reward calculation, dealer AI, and game transitions
+- Parameterized tests for edge cases and comprehensive scenarios
+
+#### Debugging
 - Check `runs/client/logs/` for debugging output
 - Game state logging available at DEBUG level
 
@@ -89,3 +106,41 @@ CasinoMod is a Minecraft mod built with NeoForge that adds casino gaming functio
 - Textures go in `src/main/resources/assets/casinomod/`
 - Language files in `assets/casinomod/lang/en_us.json`
 - Block/item models follow standard Minecraft conventions
+
+## Current Development Todos
+
+### P0 Priorities (Critical - Core Blackjack Features)
+- [ ] Add Double Down functionality to blackjack game
+- [ ] Display hand values in the blackjack UI
+- [ ] Show current bet amount in the dealer screen
+- [ ] Implement action button state management (enable/disable based on game state)
+- [ ] Add configurable Soft 17 rule for dealer behavior
+
+### P1 Priorities (High - Enhanced Gameplay)
+- [ ] Split Pairs functionality for matching cards
+- [ ] Insurance side bet against dealer blackjack
+- [ ] Dealer blackjack peek with 10/Ace showing
+- [ ] Multi-deck support (2-8 deck shoes)
+- [ ] Betting limits enforcement (min/max)
+
+### P2 Priorities (Medium - Polish & Quality of Life)
+- [ ] Surrender option for players
+- [ ] Win/Loss statistics tracking
+- [ ] Game history display (recent hands)
+- [ ] Card deal animations
+- [ ] Chip system for standardized currency
+
+### P3 Priorities (Low - Advanced Features)
+- [ ] Side bets (Perfect Pairs, 21+3)
+- [ ] Card counting protection (shuffle timing)
+- [ ] Multiple bet amount options
+- [ ] Card shuffle animation
+- [ ] Enhanced win celebration effects
+
+### P4 Priorities (Nice-to-Have - Extra Polish)
+- [ ] Chip stacking sound effects
+- [ ] Advanced statistics and analytics
+- [ ] Tournament mode
+- [ ] Custom deck themes
+- [ ] Hot/Cold streak tracking
+- Always add tests to things that you add

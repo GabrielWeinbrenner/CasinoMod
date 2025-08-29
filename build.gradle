@@ -3,6 +3,7 @@ plugins {
     id 'maven-publish'
     id 'net.neoforged.gradle.userdev' version '7.0.190'
     id 'com.diffplug.spotless' version '6.25.0'
+    id 'jacoco'
 }
 
 tasks.named('wrapper', Wrapper).configure {
@@ -98,6 +99,15 @@ dependencies {
     // For all intends and purposes: You can treat this dependency as if it is a normal library you would use.
     implementation "net.neoforged:neoforge:${neo_version}"
 
+    // JUnit 5 testing framework
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
+    
+    // Mockito for mocking
+    testImplementation 'org.mockito:mockito-core:5.8.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.8.0'
+
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
@@ -162,6 +172,63 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
 
+// Configure JUnit 5 testing
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+    finalizedBy jacocoTestReport
+}
+
+// JaCoCo configuration
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    
+    // Filter to focus on blackjack package
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, include: [
+                '**/blackjack/**',
+                '**/handler/**'
+            ])
+        }))
+    }
+}
+
+// Custom task for blackjack-specific coverage
+task blackjackCoverage(type: JacocoReport) {
+    dependsOn test
+    group = "verification"
+    description = "Generate code coverage report for blackjack package only"
+    
+    executionData test
+    sourceSets sourceSets.main
+    
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+        html.outputLocation = layout.buildDirectory.dir('reports/jacoco/blackjack')
+    }
+    
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, include: [
+            '**/blackjack/**'
+        ])
+    }))
+}
+
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
 idea {
     module {
@@ -185,4 +252,11 @@ tasks.register("fc") {
     group = "minecraft"
     description = "Formats code using Spotless and launches the Minecraft client."
     dependsOn("spotlessApply", "runClient")
+}
+
+// Custom task alias for easier access
+tasks.register("coverage") {
+    group = "verification"
+    description = "Alias for blackjackCoverage task"
+    dependsOn("blackjackCoverage")
 }

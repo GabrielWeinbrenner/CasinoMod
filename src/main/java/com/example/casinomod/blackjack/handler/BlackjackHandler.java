@@ -111,16 +111,7 @@ public class BlackjackHandler {
     } else {
       BlackjackGame.Result result = game.determineResult();
       handleResult(result, player, level, pos, dealerBe, game);
-
-      ServerTaskScheduler.schedule(
-          serverLevel.getServer(),
-          () -> {
-            dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
-            game.reset();
-            updateBlock(level, pos, dealerBe);
-            CasinoMod.LOGGER.debug("[DealerTurn] Game reset after dealer finishes.");
-          },
-          100);
+      // Note: handleResult will schedule the reset - no need to duplicate it here
     }
   }
 
@@ -141,9 +132,10 @@ public class BlackjackHandler {
     ServerTaskScheduler.schedule(
         Objects.requireNonNull(level.getServer()),
         () -> {
-          game.reset();
           dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
+          game.reset();
           updateBlock(level, pos, dealerBe);
+          CasinoMod.LOGGER.debug("[BlackjackHandler] Game reset after handling results.");
         },
         60);
   }
@@ -156,11 +148,12 @@ public class BlackjackHandler {
       BlackjackGame game) {
     ItemStack wager = dealerBe.getLastWager();
     if (!wager.isEmpty()) {
-      // Blackjack pays 3:2 (1.5x payout), regular win pays 1:1 (1x payout)  
+      // Blackjack pays 3:2 (1.5x payout), regular win pays 1:1 (1x payout)
       // Total returned = original wager + payout
-      int totalReturnCount = game.isBlackjack() 
-          ? wager.getCount() + (wager.getCount() * 3 / 2)  // 1.5x payout
-          : wager.getCount() * 2;                          // 1x payout
+      int totalReturnCount =
+          game.isBlackjack()
+              ? wager.getCount() + (wager.getCount() * 3 / 2) // 1.5x payout
+              : wager.getCount() * 2; // 1x payout
 
       ItemStack reward = wager.copyWithCount(totalReturnCount);
       if (!player.getInventory().add(reward)) {
