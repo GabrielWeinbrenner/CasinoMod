@@ -31,6 +31,11 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
   private static final int BASE_CARD_HEIGHT = 52;
   private static final int BASE_CARD_SPACING = 40;
 
+  // Button references for state management
+  private Button dealButton;
+  private Button hitButton;
+  private Button standButton;
+
   public DealerScreen(DealerMenu menu, Inventory playerInventory, Component title) {
     super(menu, playerInventory, title);
     this.imageWidth = BASE_GUI_SIZE;
@@ -55,41 +60,47 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
     int buttonY =
         (this.height - scaledImageHeight) / 2 + scaledImageHeight - (int) (30 * scaleFactor);
 
-    this.addRenderableWidget(
-        Button.builder(
-                Component.literal("Deal"),
-                b ->
-                    ClientPacketDistributor.sendToServer(
-                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DEAL)))
-            .bounds(startX, buttonY, buttonWidth, (int) (20 * scaleFactor))
-            .build());
+    dealButton = Button.builder(
+            Component.literal("Deal"),
+            b ->
+                ClientPacketDistributor.sendToServer(
+                    new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DEAL)))
+        .bounds(startX, buttonY, buttonWidth, (int) (20 * scaleFactor))
+        .build();
+    this.addRenderableWidget(dealButton);
 
-    this.addRenderableWidget(
-        Button.builder(
-                Component.literal("Hit"),
-                b ->
-                    ClientPacketDistributor.sendToServer(
-                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.HIT)))
-            .bounds(
-                startX + (buttonWidth + spacing), buttonY, buttonWidth, (int) (20 * scaleFactor))
-            .build());
+    hitButton = Button.builder(
+            Component.literal("Hit"),
+            b ->
+                ClientPacketDistributor.sendToServer(
+                    new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.HIT)))
+        .bounds(
+            startX + (buttonWidth + spacing), buttonY, buttonWidth, (int) (20 * scaleFactor))
+        .build();
+    this.addRenderableWidget(hitButton);
 
-    this.addRenderableWidget(
-        Button.builder(
-                Component.literal("Stand"),
-                b ->
-                    ClientPacketDistributor.sendToServer(
-                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.STAND)))
-            .bounds(
-                startX + 2 * (buttonWidth + spacing),
-                buttonY,
-                buttonWidth,
-                (int) (20 * scaleFactor))
-            .build());
+    standButton = Button.builder(
+            Component.literal("Stand"),
+            b ->
+                ClientPacketDistributor.sendToServer(
+                    new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.STAND)))
+        .bounds(
+            startX + 2 * (buttonWidth + spacing),
+            buttonY,
+            buttonWidth,
+            (int) (20 * scaleFactor))
+        .build();
+    this.addRenderableWidget(standButton);
+
+    // Set initial button states
+    updateButtonStates();
   }
 
   @Override
   public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    // Update button states based on current game state
+    updateButtonStates();
+    
     super.render(guiGraphics, mouseX, mouseY, partialTick);
 
     BlackjackGame.Result result = menu.blockEntity.getGame().getResult();
@@ -288,6 +299,21 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
   @Override
   protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
     return;
+  }
+
+  private void updateButtonStates() {
+    BlackjackGame game = menu.blockEntity.getGame();
+    BlackjackGame.GamePhase phase = game.getPhase();
+    ItemStack wager = menu.blockEntity.inventory.getStackInSlot(0);
+
+    // Deal button: enabled when waiting for game and wager is placed
+    dealButton.active = (phase == BlackjackGame.GamePhase.WAITING && !wager.isEmpty());
+
+    // Hit button: enabled during player turn only
+    hitButton.active = (phase == BlackjackGame.GamePhase.PLAYER_TURN);
+
+    // Stand button: enabled during player turn only
+    standButton.active = (phase == BlackjackGame.GamePhase.PLAYER_TURN);
   }
 
   private static ResourceLocation getCardTexture(String cardName) {
