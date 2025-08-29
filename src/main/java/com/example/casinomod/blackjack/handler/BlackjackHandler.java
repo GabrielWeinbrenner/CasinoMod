@@ -156,10 +156,13 @@ public class BlackjackHandler {
       BlackjackGame game) {
     ItemStack wager = dealerBe.getLastWager();
     if (!wager.isEmpty()) {
-      int multiplier = game.isBlackjack() ? 3 : 2;
-      int rewardCount = wager.getCount() * multiplier;
+      // Blackjack pays 3:2 (1.5x payout), regular win pays 1:1 (1x payout)  
+      // Total returned = original wager + payout
+      int totalReturnCount = game.isBlackjack() 
+          ? wager.getCount() + (wager.getCount() * 3 / 2)  // 1.5x payout
+          : wager.getCount() * 2;                          // 1x payout
 
-      ItemStack reward = wager.copyWithCount(rewardCount);
+      ItemStack reward = wager.copyWithCount(totalReturnCount);
       if (!player.getInventory().add(reward)) {
         player.drop(reward, false);
       }
