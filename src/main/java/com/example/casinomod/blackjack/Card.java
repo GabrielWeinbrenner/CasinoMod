@@ -6,7 +6,8 @@ public class Card {
 
   public Card(int value, Suit suit) {
     if (value < 1 || value > 13) {
-      throw new IllegalArgumentException("Invalid card value: " + value + ". Must be between 1 and 13.");
+      throw new IllegalArgumentException(
+          "Invalid card value: " + value + ". Must be between 1 and 13.");
     }
     if (suit == null) {
       throw new IllegalArgumentException("Suit cannot be null");
@@ -47,21 +48,24 @@ public class Card {
 
     String[] parts = name.split("_");
     if (parts.length != 2) {
-      throw new IllegalArgumentException("Invalid card name format: " + name + ". Expected format: suit_rank");
+      throw new IllegalArgumentException(
+          "Invalid card name format: " + name + ". Expected format: suit_rank");
     }
 
     String suitStr = parts[0];
     String rankStr = parts[1];
 
     if (suitStr.trim().isEmpty() || rankStr.trim().isEmpty()) {
-      throw new IllegalArgumentException("Invalid card name: " + name + ". Suit and rank cannot be empty");
+      throw new IllegalArgumentException(
+          "Invalid card name: " + name + ". Suit and rank cannot be empty");
     }
 
     Suit suit;
     try {
       suit = Suit.valueOf(suitStr.toUpperCase());
     } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException("Invalid suit: " + suitStr + ". Valid suits: hearts, diamonds, clubs, spades");
+      throw new IllegalArgumentException(
+          "Invalid suit: " + suitStr + ". Valid suits: hearts, diamonds, clubs, spades");
     }
 
     int value;
@@ -75,13 +79,15 @@ public class Card {
             default -> {
               int parsedValue = Integer.parseInt(rankStr);
               if (parsedValue < 2 || parsedValue > 10) {
-                throw new IllegalArgumentException("Invalid numeric rank: " + rankStr + ". Must be 2-10");
+                throw new IllegalArgumentException(
+                    "Invalid numeric rank: " + rankStr + ". Must be 2-10");
               }
               yield parsedValue;
             }
           };
     } catch (NumberFormatException e) {
-      throw new IllegalArgumentException("Invalid rank: " + rankStr + ". Must be ace, j, q, k, or 2-10");
+      throw new IllegalArgumentException(
+          "Invalid rank: " + rankStr + ". Must be ace, j, q, k, or 2-10");
     }
 
     return new Card(value, suit);

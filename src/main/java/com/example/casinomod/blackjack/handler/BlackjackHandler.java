@@ -134,13 +134,12 @@ public class BlackjackHandler {
       BlackjackGame game) {
     switch (result) {
       case WIN -> handleWin(player, level, pos, dealerBe, game);
-      case LOSE -> handleLoss(player, level, pos);
+      case LOSE -> handleLoss(player, level, pos, dealerBe);
       case DRAW -> handleDraw(player, level, pos, dealerBe);
     }
     ServerTaskScheduler.schedule(
         Objects.requireNonNull(level.getServer()),
         () -> {
-          dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
           game.reset();
           updateBlock(level, pos, dealerBe);
           CasinoMod.LOGGER.debug("[BlackjackHandler] Game reset after handling results.");
@@ -154,8 +153,11 @@ public class BlackjackHandler {
       BlockPos pos,
       DealerBlockEntity dealerBe,
       BlackjackGame game) {
-    ItemStack wager = dealerBe.getLastWager();
+    // Extract the wager from inventory and calculate payout
+    ItemStack wager = dealerBe.inventory.getStackInSlot(0);
     if (!wager.isEmpty()) {
+      dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
+      
       // Blackjack pays 3:2 (1.5x payout), regular win pays 1:1 (1x payout)
       // Total returned = original wager + payout
       int totalReturnCount =
@@ -177,17 +179,25 @@ public class BlackjackHandler {
     }
   }
 
-  private static void handleLoss(ServerPlayer player, Level level, BlockPos pos) {
+  private static void handleLoss(ServerPlayer player, Level level, BlockPos pos, DealerBlockEntity dealerBe) {
+    // Extract the wager from inventory since player lost
+    ItemStack wager = dealerBe.inventory.getStackInSlot(0);
+    if (!wager.isEmpty()) {
+      dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
+    }
+    
     player.sendSystemMessage(Component.literal("You lost your wager."));
     playFeedback(level, pos, SoundEvents.VILLAGER_NO, ParticleTypes.SMOKE);
   }
 
   private static void handleDraw(
       ServerPlayer player, Level level, BlockPos pos, DealerBlockEntity dealerBe) {
-    ItemStack wager = dealerBe.getLastWager();
+    // Extract the wager from inventory and return it to player
+    ItemStack wager = dealerBe.inventory.getStackInSlot(0);
     if (!wager.isEmpty()) {
-      if (!player.getInventory().add(wager.copy())) {
-        player.drop(wager.copy(), false);
+      dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
+      if (!player.getInventory().add(wager)) {
+        player.drop(wager, false);
       }
       player.sendSystemMessage(Component.literal("It's a draw. Your wager has been returned."));
       playFeedback(level, pos, SoundEvents.EXPERIENCE_ORB_PICKUP, ParticleTypes.NOTE);

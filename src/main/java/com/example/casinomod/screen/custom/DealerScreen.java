@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
@@ -112,6 +113,77 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
       int x = (this.width - this.font.width(message)) / 2;
       int y = this.height / 2 - this.font.lineHeight / 2;
       guiGraphics.drawString(this.font, message, x, y, color, false);
+
+    }
+
+    // Display hand values and bet information when cards are dealt
+    BlackjackGame game = menu.blockEntity.getGame();
+    if (game.getPlayerHand().size() > 0 || game.getDealerHand().size() > 0) {
+      // Player hand value
+      int playerValue = game.getHandValue(game.getPlayerHand());
+      String playerText = "Player: " + playerValue;
+      if (playerValue > 21) {
+        playerText += " (BUST)";
+      }
+
+      // Dealer hand value (show partial during player turn)
+      String dealerText;
+      if (game.getPhase() == BlackjackGame.GamePhase.PLAYER_TURN
+          && game.getDealerHand().size() >= 2) {
+        int firstCardValue = game.getDealerHand().get(0).getBlackjackValue();
+        if (game.getDealerHand().get(0).isAce()) {
+          dealerText = "Dealer: " + firstCardValue + "/11 + ?";
+        } else {
+          dealerText = "Dealer: " + firstCardValue + " + ?";
+        }
+      } else {
+        int dealerValue = game.getHandValue(game.getDealerHand());
+        dealerText = "Dealer: " + dealerValue;
+        if (dealerValue > 21) {
+          dealerText += " (BUST)";
+        }
+      }
+
+      // Position hand values in corners to avoid card overlap
+      // Dealer text in top-left corner
+      int dealerX = 10;
+      int dealerY = 20;
+      guiGraphics.drawString(this.font, dealerText, dealerX, dealerY, 0xFFFFFFFF, false);
+
+      // Player text in bottom-left corner
+      int playerX = 10;
+      int playerY = this.height - 30;
+      guiGraphics.drawString(this.font, playerText, playerX, playerY, 0xFFFFFFFF, false);
+    }
+
+    // Show current bet amount - use the inventory slot instead of lastWager for now
+    ItemStack currentBet = menu.blockEntity.inventory.getStackInSlot(0);
+    System.out.println("[DEBUG] Bet ItemStack from inventory: " + currentBet + ", isEmpty: " + currentBet.isEmpty());
+    if (!currentBet.isEmpty()) {
+      String betText =
+          "Bet: " + currentBet.getCount() + " " + currentBet.getHoverName().getString();
+      System.out.println("[DEBUG] Bet text: " + betText);
+      // Position bet in top-right corner
+      int betX = this.width - this.font.width(betText) - 10;
+      int betY = 20;
+      guiGraphics.drawString(this.font, betText, betX, betY, 0xFFFFFFFF, false);
+    } else {
+      // Try to show lastWager if inventory is empty but wager was placed
+      ItemStack lastWager = menu.blockEntity.getLastWager();
+      if (!lastWager.isEmpty()) {
+        String betText =
+            "Last Bet: " + lastWager.getCount() + " " + lastWager.getHoverName().getString();
+        System.out.println("[DEBUG] Last wager text: " + betText);
+        int betX = this.width - this.font.width(betText) - 10;
+        int betY = 20;
+        guiGraphics.drawString(this.font, betText, betX, betY, 0xFFFFFFFF, false);
+      } else {
+        // Show "No Bet" message in top-right corner when no bet is placed
+        String noBetText = "No Bet";
+        int noBetX = this.width - this.font.width(noBetText) - 10;
+        int noBetY = 20;
+        guiGraphics.drawString(this.font, noBetText, noBetX, noBetY, 0xFFFFFFFF, false);
+      }
     }
   }
 
@@ -173,6 +245,7 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
         cardSpacing,
         cardWidth,
         cardHeight);
+
     BlackjackGame.Result result = game.getResult();
   }
 

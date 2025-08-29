@@ -30,13 +30,22 @@ public class DealerBlockEntity extends BlockEntity implements MenuProvider {
       new ItemStackHandler(1) {
         @Override
         protected int getStackLimit(int slot, ItemStack stack) {
-          return 1;
+          return 64; // Allow stacking for larger bets
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+          // Prevent extraction during active games (except when dealing)
+          if (blackjackGame.getPhase() != BlackjackGame.GamePhase.WAITING) {
+            return ItemStack.EMPTY;
+          }
+          return super.extractItem(slot, amount, simulate);
         }
 
         @Override
         protected void onContentsChanged(int slot) {
           setChanged();
-          if (!level.isClientSide()) {
+          if (level != null && !level.isClientSide()) {
             level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
           }
         }
@@ -84,10 +93,12 @@ public class DealerBlockEntity extends BlockEntity implements MenuProvider {
   @Override
   public void saveAdditional(ValueOutput output) {
     blackjackGame.serialize(output.child("game"));
+    // Note: lastWager will be synced through inventory updates instead
   }
 
   @Override
   public void loadAdditional(ValueInput input) {
     input.child("game").ifPresent(blackjackGame::deserialize);
+    // Note: lastWager will be synced through inventory updates instead
   }
 }

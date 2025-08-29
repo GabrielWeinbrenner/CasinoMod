@@ -144,3 +144,6 @@ CasinoMod is a Minecraft mod built with NeoForge that adds casino gaming functio
 - [ ] Custom deck themes
 - [ ] Hot/Cold streak tracking
 - Always add tests to things that you add
+- When debugging a change make sure to run the client and tell the user what to do in order to test
+- When there is a current client running when you are asking to debug you must end the previous client and restart it
+- Anytime you make an ingame Minecraft change kill and run the bash.

@@ -231,7 +231,7 @@ public class BlackjackGame implements ValueIOSerializable {
     return getHandValue(hand) > 21;
   }
 
-  private int getHandValue(List<Card> hand) {
+  public int getHandValue(List<Card> hand) {
     int total = 0;
     int aceCount = 0;
 

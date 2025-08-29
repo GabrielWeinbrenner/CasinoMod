@@ -24,8 +24,7 @@ class CardValidationTest {
   @ValueSource(ints = {0, -1, -10, 14, 15, 100})
   void testInvalidCardValues(int invalidValue) {
     IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class, () -> new Card(invalidValue, Suit.HEARTS));
+        assertThrows(IllegalArgumentException.class, () -> new Card(invalidValue, Suit.HEARTS));
     assertTrue(exception.getMessage().contains("Invalid card value"));
     assertTrue(exception.getMessage().contains("Must be between 1 and 13"));
   }

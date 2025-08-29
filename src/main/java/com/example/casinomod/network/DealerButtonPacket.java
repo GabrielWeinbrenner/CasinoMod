@@ -24,7 +24,8 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
   public enum Action {
     DEAL,
     HIT,
-    STAND;
+    STAND,
+    DOUBLE_DOWN;
 
     public static final Action[] VALUES = values();
 
@@ -99,11 +100,9 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
     }
 
     if (!dealerBe.inventory.getStackInSlot(0).isEmpty()) {
-      ItemStack wagered =
-          dealerBe.inventory.extractItem(0, dealerBe.inventory.getStackInSlot(0).getCount(), false);
-      if (!wagered.isEmpty()) {
-        dealerBe.setLastWager(wagered);
-      }
+      // Store wager info but don't extract yet - keep it visible during game
+      ItemStack wager = dealerBe.inventory.getStackInSlot(0).copy();
+      dealerBe.setLastWager(wager);
 
       if (level.getServer() != null) {
         BlackjackHandler.startGameWithDelay(player, level, pos, dealerBe, game);
