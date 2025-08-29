@@ -120,7 +120,7 @@ public class BlackjackHandler {
             updateBlock(level, pos, dealerBe);
             CasinoMod.LOGGER.debug("[DealerTurn] Game reset after dealer finishes.");
           },
-          40);
+          100);
     }
   }
 

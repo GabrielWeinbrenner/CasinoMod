@@ -8,6 +8,8 @@ import com.example.casinomod.blackjack.Card;
 import com.example.casinomod.network.DealerButtonPacket;
 import com.example.casinomod.network.DealerButtonPacket.Action;
 
+import org.jetbrains.annotations.NotNull;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -23,86 +25,73 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
       ResourceLocation.fromNamespaceAndPath(
           CasinoMod.MODID, "textures/gui/dealer_block/dealer_gui.png");
 
+  private static final int BASE_GUI_SIZE = 200; // nominal base for scaling
+  private static final int BASE_CARD_WIDTH = 37;
+  private static final int BASE_CARD_HEIGHT = 52;
+  private static final int BASE_CARD_SPACING = 40;
+
   public DealerScreen(DealerMenu menu, Inventory playerInventory, Component title) {
     super(menu, playerInventory, title);
-    this.imageWidth = 256;
-    this.imageHeight = 256;
+    this.imageWidth = BASE_GUI_SIZE;
+    this.imageHeight = BASE_GUI_SIZE;
   }
 
   @Override
   protected void init() {
     super.init();
-    int centerX = (this.width - this.imageWidth) / 2;
-    int centerY = (this.height - this.imageHeight) / 2;
 
-    // Log game state
-    BlackjackGame.GamePhase phase = menu.blockEntity.getGame().getPhase();
-    CasinoMod.LOGGER.debug("Opening DealerScreen with game phase: {}", phase);
+    float scaleFactor =
+        Math.min(this.width / (float) BASE_GUI_SIZE, this.height / (float) BASE_GUI_SIZE);
+    int scaledImageWidth = (int) (BASE_GUI_SIZE * scaleFactor);
+    int scaledImageHeight = (int) (BASE_GUI_SIZE * scaleFactor);
+    int guiLeft = (this.width - scaledImageWidth) / 2;
 
-    // Center-aligned buttons
-    int buttonWidth = 60;
-    int spacing = 10;
+    int centerX = guiLeft + scaledImageWidth / 2;
+    int buttonWidth = (int) (40 * scaleFactor);
+    int spacing = (int) (10 * scaleFactor);
     int totalWidth = 3 * buttonWidth + 2 * spacing;
-    int startX = centerX + (this.imageWidth - totalWidth) / 2;
+    int startX = centerX - (totalWidth / 2);
+    int buttonY =
+        (this.height - scaledImageHeight) / 2 + scaledImageHeight - (int) (30 * scaleFactor);
 
     this.addRenderableWidget(
         Button.builder(
                 Component.literal("Deal"),
-                b -> {
-                  CasinoMod.LOGGER.info("Deal button clicked");
-                  ClientPacketDistributor.sendToServer(
-                      new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DEAL));
-                })
-            .bounds(startX, centerY + 200, buttonWidth, 20)
+                b ->
+                    ClientPacketDistributor.sendToServer(
+                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DEAL)))
+            .bounds(startX, buttonY, buttonWidth, (int) (20 * scaleFactor))
             .build());
 
     this.addRenderableWidget(
         Button.builder(
                 Component.literal("Hit"),
-                b -> {
-                  CasinoMod.LOGGER.info("Hit button clicked");
-                  ClientPacketDistributor.sendToServer(
-                      new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.HIT));
-                })
-            .bounds(startX + (buttonWidth + spacing), centerY + 200, buttonWidth, 20)
+                b ->
+                    ClientPacketDistributor.sendToServer(
+                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.HIT)))
+            .bounds(
+                startX + (buttonWidth + spacing), buttonY, buttonWidth, (int) (20 * scaleFactor))
             .build());
 
     this.addRenderableWidget(
         Button.builder(
                 Component.literal("Stand"),
-                b -> {
-                  CasinoMod.LOGGER.info("Stand button clicked");
-                  ClientPacketDistributor.sendToServer(
-                      new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.STAND));
-                })
-            .bounds(startX + 2 * (buttonWidth + spacing), centerY + 200, buttonWidth, 20)
+                b ->
+                    ClientPacketDistributor.sendToServer(
+                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.STAND)))
+            .bounds(
+                startX + 2 * (buttonWidth + spacing),
+                buttonY,
+                buttonWidth,
+                (int) (20 * scaleFactor))
             .build());
   }
 
   @Override
-  protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-    int x = (width - imageWidth) / 2;
-    int y = (height - imageHeight) / 2;
+  public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-    guiGraphics.blit(
-        RenderPipelines.GUI_TEXTURED,
-        GUI_TEXTURE,
-        x,
-        y,
-        0,
-        0,
-        imageWidth,
-        imageHeight,
-        1024,
-        1024,
-        1024,
-        1024);
-
-    BlackjackGame game = menu.blockEntity.getGame();
-    BlackjackGame.Result result = game.getResult();
-    renderHand(guiGraphics, game.getPlayerHand(), x + 20, y + 170, false);
-    renderHand(guiGraphics, game.getDealerHand(), x + 20, y + 40, true);
-
+    BlackjackGame.Result result = menu.blockEntity.getGame().getResult();
     if (result != null) {
       String message =
           switch (result) {
@@ -112,53 +101,124 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
             default -> "";
           };
 
-      guiGraphics.drawCenteredString(this.font, message, this.width / 2, y + 10, 0xFFFFFF);
+      int color =
+          switch (result) {
+            case WIN -> 0xFFFFFFFF; // Green
+            case LOSE -> 0xFFFFFFFF; // Red
+            case DRAW -> 0xFFFFFFFF; // Yellow
+            default -> 0xFFFFFFFF; // White
+          };
+      // Center on the whole screen
+      int x = (this.width - this.font.width(message)) / 2;
+      int y = this.height / 2 - this.font.lineHeight / 2;
+      guiGraphics.drawString(this.font, message, x, y, color, false);
     }
   }
 
+  @Override
+  protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
+    float scaleFactor =
+        Math.min(this.width / (float) BASE_GUI_SIZE, this.height / (float) BASE_GUI_SIZE);
+    int scaledImageWidth = (int) (BASE_GUI_SIZE * scaleFactor);
+    int scaledImageHeight = (int) (BASE_GUI_SIZE * scaleFactor);
+    int guiLeft = (this.width - scaledImageWidth) / 2;
+    int guiTop = (this.height - scaledImageHeight) / 2;
+
+    // Draw background texture
+    guiGraphics.blit(
+        RenderPipelines.GUI_TEXTURED,
+        GUI_TEXTURE,
+        guiLeft,
+        guiTop,
+        0,
+        0,
+        scaledImageWidth,
+        scaledImageHeight,
+        1024,
+        1024,
+        1024,
+        1024);
+
+    BlackjackGame game = menu.blockEntity.getGame();
+
+    float cardScale = 0.75f; // smaller cards
+    int cardSpacing = (int) (BASE_CARD_SPACING * scaleFactor * cardScale);
+    int cardWidth = (int) (BASE_CARD_WIDTH * scaleFactor * cardScale);
+    int cardHeight = (int) (BASE_CARD_HEIGHT * scaleFactor * cardScale);
+
+    int centerX = guiLeft + scaledImageWidth / 2;
+
+    // Dealer cards
+    int dealerY = guiTop + (int) (50 * scaleFactor);
+    int dealerStartX = centerX - (game.getDealerHand().size() * cardSpacing / 2);
+    renderHand(
+        guiGraphics,
+        game.getDealerHand(),
+        dealerStartX,
+        dealerY,
+        true,
+        cardSpacing,
+        cardWidth,
+        cardHeight);
+
+    // Player cards
+    int playerY = guiTop + (int) (130 * scaleFactor);
+    int playerStartX = centerX - (game.getPlayerHand().size() * cardSpacing / 2);
+    renderHand(
+        guiGraphics,
+        game.getPlayerHand(),
+        playerStartX,
+        playerY,
+        false,
+        cardSpacing,
+        cardWidth,
+        cardHeight);
+    BlackjackGame.Result result = game.getResult();
+  }
+
   private void renderHand(
-      GuiGraphics guiGraphics, List<Card> hand, int startX, int startY, boolean isDealer) {
-    int spacing = 40;
+      GuiGraphics guiGraphics,
+      List<Card> hand,
+      int startX,
+      int startY,
+      boolean isDealer,
+      int cardSpacing,
+      int cardWidth,
+      int cardHeight) {
+
     BlackjackGame.GamePhase phase = menu.blockEntity.getGame().getPhase();
+
     for (int i = 0; i < hand.size(); i++) {
       Card card = hand.get(i);
       boolean isSecondDealerCard = isDealer && i == 1;
       boolean showBack = isSecondDealerCard && phase == BlackjackGame.GamePhase.PLAYER_TURN;
 
       String cardName = showBack ? "back" : card.getCardName();
-      CasinoMod.LOGGER.trace(
-          "{} card {} being rendered at {},{}",
-          isDealer ? "Dealer" : "Player",
-          cardName,
-          startX + i * spacing,
-          startY);
-
       ResourceLocation texture = getCardTexture(cardName);
+
       guiGraphics.blit(
           RenderPipelines.GUI_TEXTURED,
           texture,
-          startX + i * spacing,
+          startX + i * cardSpacing,
           startY,
           0f,
           0f,
-          37,
-          52,
-          37,
-          52,
-          37,
-          52);
+          cardWidth,
+          cardHeight,
+          cardWidth,
+          cardHeight,
+          cardWidth,
+          cardHeight);
     }
+  }
+
+  @Override
+  protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+    return;
   }
 
   private static ResourceLocation getCardTexture(String cardName) {
     String path = "textures/gui/dealer_block/cards/" + cardName + ".png";
-    CasinoMod.LOGGER.trace("Trying to load card texture: {}", path);
     return ResourceLocation.fromNamespaceAndPath(CasinoMod.MODID, path);
-  }
-
-  @Override
-  public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-    super.render(guiGraphics, mouseX, mouseY, partialTick);
-    this.renderTooltip(guiGraphics, mouseX, mouseY);
   }
 }

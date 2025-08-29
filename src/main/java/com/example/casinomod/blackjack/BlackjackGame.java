@@ -172,7 +172,12 @@ public class BlackjackGame implements ValueIOSerializable {
 
   @Nullable
   public Result getResult() {
-    return (phase == GamePhase.FINISHED) ? determineResult() : null;
+    Result result = (phase == GamePhase.FINISHED) ? determineResult() : null;
+    CasinoMod.LOGGER.trace(
+        "[BlackjackGame] getResult() → Phase: {}, Result: {}",
+        phase.name(),
+        (result != null) ? result.name() : "null");
+    return result;
   }
 
   public Result determineResult() {
@@ -201,7 +206,7 @@ public class BlackjackGame implements ValueIOSerializable {
   // ─────────────── Helpers ───────────────
 
   public Card draw() {
-    Card card = deck.remove(0);
+    Card card = deck.removeFirst();
     CasinoMod.LOGGER.trace("[BlackjackGame] Drawing card: {}", card);
     return card;
   }
