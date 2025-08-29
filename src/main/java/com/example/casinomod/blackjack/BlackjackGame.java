@@ -206,6 +206,18 @@ public class BlackjackGame implements ValueIOSerializable {
   // ─────────────── Helpers ───────────────
 
   public Card draw() {
+    if (deck.isEmpty()) {
+      CasinoMod.LOGGER.error("[BlackjackGame] Attempted to draw from empty deck! Reshuffling...");
+      // Emergency reshuffle - create new deck and shuffle
+      for (int i = 1; i <= 13; i++) {
+        for (Suit suit : Suit.values()) {
+          deck.add(new Card(i, suit));
+        }
+      }
+      Collections.shuffle(deck, random);
+      CasinoMod.LOGGER.info("[BlackjackGame] Emergency reshuffled deck with {} cards", deck.size());
+    }
+    
     Card card = deck.removeFirst();
     CasinoMod.LOGGER.trace("[BlackjackGame] Drawing card: {}", card);
     return card;
