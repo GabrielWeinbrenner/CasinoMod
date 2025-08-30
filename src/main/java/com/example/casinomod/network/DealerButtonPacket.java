@@ -8,6 +8,7 @@ import com.example.casinomod.block.custom.DealerBlockEntity;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -83,6 +84,7 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
       case DEAL -> handleDeal(player, game, dealerBe, level, pos);
       case HIT -> handleHit(game, dealerBe, level, pos, player);
       case STAND -> handleStand(game, dealerBe, level, pos, player);
+      case DOUBLE_DOWN -> handleDoubleDown(game, dealerBe, level, pos, player);
     }
   }
 
@@ -118,17 +120,14 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
       Level level,
       BlockPos pos,
       ServerPlayer player) {
-    if (game.getPhase() == GamePhase.PLAYER_TURN) {
-      game.hitPlayer();
-      updateBlock(level, pos, dealerBe);
-
-      if (game.getPhase() == GamePhase.FINISHED) {
-        // If player busts, dealer doesn't play, go straight to result
-        BlackjackHandler.simulateDealerTurn(player, level, pos, dealerBe, game);
-      }
-    } else {
+    if (game.getPhase() != GamePhase.PLAYER_TURN) {
       CasinoMod.LOGGER.warn("Cannot hit. Current phase: {}", game.getPhase());
+      return;
     }
+
+    game.hitPlayer();
+    updateBlock(level, pos, dealerBe);
+    proceedToNextPhaseIfNeeded(game, player, level, pos, dealerBe);
   }
 
   private static void handleStand(
@@ -137,15 +136,81 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
       Level level,
       BlockPos pos,
       ServerPlayer player) {
-    if (game.getPhase() == GamePhase.PLAYER_TURN) {
-      game.stand();
-      updateBlock(level, pos, dealerBe);
-
-      if (level.getServer() != null) {
-        BlackjackHandler.simulateDealerTurn(player, level, pos, dealerBe, game);
-      }
-    } else {
+    if (game.getPhase() != GamePhase.PLAYER_TURN) {
       CasinoMod.LOGGER.warn("Cannot stand. Current phase: {}", game.getPhase());
+      return;
+    }
+
+    game.stand();
+    updateBlock(level, pos, dealerBe);
+    proceedToNextPhaseIfNeeded(game, player, level, pos, dealerBe);
+  }
+
+  private static void handleDoubleDown(
+      BlackjackGame game,
+      DealerBlockEntity dealerBe,
+      Level level,
+      BlockPos pos,
+      ServerPlayer player) {
+    if (!game.canDoubleDown()) {
+      CasinoMod.LOGGER.warn("Cannot double down. Current phase: {}, Hand size: {}", 
+          game.getPhase(), game.getPlayerHand().size());
+      return;
+    }
+
+    // Get the current wager to double it
+    ItemStack currentWager = dealerBe.inventory.getStackInSlot(0);
+    if (currentWager.isEmpty()) {
+      CasinoMod.LOGGER.warn("Cannot double down - no wager found");
+      return;
+    }
+
+    // Try to extract matching wager from player's inventory for the double down
+    ItemStack additionalWager = new ItemStack(currentWager.getItem(), currentWager.getCount());
+    boolean extracted = false;
+    
+    // Try to remove the additional wager from player's inventory
+    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+      ItemStack slot = player.getInventory().getItem(i);
+      if (ItemStack.isSameItemSameComponents(slot, additionalWager) && slot.getCount() >= additionalWager.getCount()) {
+        slot.shrink(additionalWager.getCount());
+        extracted = true;
+        break;
+      }
+    }
+
+    if (!extracted) {
+      player.sendSystemMessage(Component.literal("Cannot double down - insufficient matching items in inventory"));
+      CasinoMod.LOGGER.warn("Player {} cannot double down - insufficient matching items", player.getName().getString());
+      return;
+    }
+
+    // Add the additional wager to the dealer inventory to double the bet
+    ItemStack doubledWager = currentWager.copy();
+    doubledWager.setCount(currentWager.getCount() * 2);
+    dealerBe.inventory.setStackInSlot(0, doubledWager);
+    
+    // Update the stored wager amount
+    dealerBe.setLastWager(doubledWager.copy());
+
+    game.doubleDown();
+    updateBlock(level, pos, dealerBe);
+    proceedToNextPhaseIfNeeded(game, player, level, pos, dealerBe);
+    
+    CasinoMod.LOGGER.info("Player {} doubled down, wager doubled from {} to {}", 
+        player.getName().getString(), currentWager.getCount(), doubledWager.getCount());
+  }
+
+  private static void proceedToNextPhaseIfNeeded(
+      BlackjackGame game,
+      ServerPlayer player,
+      Level level,
+      BlockPos pos,
+      DealerBlockEntity dealerBe) {
+    // Proceed to dealer turn if game phase changed to dealer turn or finished
+    if ((game.getPhase() == GamePhase.DEALER_TURN || game.getPhase() == GamePhase.FINISHED) 
+        && level.getServer() != null) {
+      BlackjackHandler.simulateDealerTurn(player, level, pos, dealerBe, game);
     }
   }
 

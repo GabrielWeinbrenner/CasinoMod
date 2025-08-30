@@ -158,23 +158,32 @@ public class BlackjackHandler {
     if (!wager.isEmpty()) {
       dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
       
+      // Calculate effective wager (doubled if player doubled down)
+      int effectiveWager = game.hasDoubledDown() ? wager.getCount() * 2 : wager.getCount();
+      
       // Blackjack pays 3:2 (1.5x payout), regular win pays 1:1 (1x payout)
-      // Total returned = original wager + payout
-      int totalReturnCount =
-          game.isBlackjack()
-              ? wager.getCount() + (wager.getCount() * 3 / 2) // 1.5x payout
-              : wager.getCount() * 2; // 1x payout
+      // Note: Blackjack bonus doesn't apply when doubled down
+      int totalReturnCount;
+      if (game.isBlackjack() && !game.hasDoubledDown()) {
+        totalReturnCount = effectiveWager + (wager.getCount() * 3 / 2); // 1.5x payout on original wager
+      } else {
+        totalReturnCount = effectiveWager * 2; // 1x payout on effective wager
+      }
 
       ItemStack reward = wager.copyWithCount(totalReturnCount);
       if (!player.getInventory().add(reward)) {
         player.drop(reward, false);
       }
 
-      player.sendSystemMessage(
-          Component.literal(
-              game.isBlackjack()
-                  ? "Blackjack! 1.5x payout!"
-                  : "You win! Wager returned with payout."));
+      String message;
+      if (game.isBlackjack() && !game.hasDoubledDown()) {
+        message = "Blackjack! 1.5x payout!";
+      } else if (game.hasDoubledDown()) {
+        message = "You win! Double down payout!";
+      } else {
+        message = "You win! Wager returned with payout.";
+      }
+      player.sendSystemMessage(Component.literal(message));
       playFeedback(level, pos, SoundEvents.PLAYER_LEVELUP, ParticleTypes.HAPPY_VILLAGER);
     }
   }

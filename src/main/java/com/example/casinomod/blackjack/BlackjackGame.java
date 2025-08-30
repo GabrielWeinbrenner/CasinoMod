@@ -35,12 +35,14 @@ public class BlackjackGame implements ValueIOSerializable {
   private final List<Card> dealerHand = new ArrayList<>();
   private final Random random = new Random();
   private GamePhase phase = GamePhase.WAITING;
+  private boolean doubledDown = false;
 
   // ─────────────── Serialization ───────────────
 
   @Override
   public void serialize(ValueOutput output) {
     output.putString("phase", phase.name());
+    output.putString("doubledDown", String.valueOf(doubledDown));
 
     ValueOutput.ValueOutputList playerList = output.childrenList("playerHand");
     for (Card card : playerHand) {
@@ -64,6 +66,8 @@ public class BlackjackGame implements ValueIOSerializable {
               } catch (IllegalArgumentException ignored) {
               }
             });
+
+    input.getString("doubledDown").ifPresent(s -> this.doubledDown = Boolean.parseBoolean(s));
 
     playerHand.clear();
     input
@@ -112,6 +116,7 @@ public class BlackjackGame implements ValueIOSerializable {
     playerHand.clear();
     dealerHand.clear();
     phase = GamePhase.WAITING;
+    doubledDown = false;
   }
 
   public void stand() {
@@ -139,6 +144,39 @@ public class BlackjackGame implements ValueIOSerializable {
       CasinoMod.LOGGER.debug("[BlackjackGame] Player busted!");
       phase = GamePhase.FINISHED;
     }
+  }
+
+  public void doubleDown() {
+    if (phase != GamePhase.PLAYER_TURN) {
+      CasinoMod.LOGGER.warn("Cannot double down: Phase is {}", phase);
+      return;
+    }
+
+    if (!canDoubleDown()) {
+      CasinoMod.LOGGER.warn("Cannot double down: Player has {} cards", playerHand.size());
+      return;
+    }
+
+    doubledDown = true;
+    Card drawn = draw();
+    playerHand.add(drawn);
+    CasinoMod.LOGGER.debug("[BlackjackGame] Player doubles down and draws {}", drawn);
+
+    // Player's turn ends immediately after double down
+    if (isBusted(playerHand)) {
+      CasinoMod.LOGGER.debug("[BlackjackGame] Player busted after double down!");
+      phase = GamePhase.FINISHED;
+    } else {
+      phase = GamePhase.DEALER_TURN;
+    }
+  }
+
+  public boolean canDoubleDown() {
+    return phase == GamePhase.PLAYER_TURN && playerHand.size() == 2;
+  }
+
+  public boolean hasDoubledDown() {
+    return doubledDown;
   }
 
   // ─────────────── Dealer AI ───────────────

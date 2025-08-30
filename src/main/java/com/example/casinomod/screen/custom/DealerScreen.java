@@ -10,6 +10,7 @@ import com.example.casinomod.network.DealerButtonPacket.Action;
 
 import org.jetbrains.annotations.NotNull;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -35,6 +36,7 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
   private Button dealButton;
   private Button hitButton;
   private Button standButton;
+  private Button doubleDownButton;
 
   public DealerScreen(DealerMenu menu, Inventory playerInventory, Component title) {
     super(menu, playerInventory, title);
@@ -53,9 +55,9 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
     int guiLeft = (this.width - scaledImageWidth) / 2;
 
     int centerX = guiLeft + scaledImageWidth / 2;
-    int buttonWidth = (int) (40 * scaleFactor);
-    int spacing = (int) (10 * scaleFactor);
-    int totalWidth = 3 * buttonWidth + 2 * spacing;
+    int buttonWidth = (int) (35 * scaleFactor); // Slightly smaller to fit 4 buttons
+    int spacing = (int) (8 * scaleFactor); // Reduced spacing
+    int totalWidth = 4 * buttonWidth + 3 * spacing;
     int startX = centerX - (totalWidth / 2);
     int buttonY =
         (this.height - scaledImageHeight) / 2 + scaledImageHeight - (int) (30 * scaleFactor);
@@ -91,6 +93,19 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
             (int) (20 * scaleFactor))
         .build();
     this.addRenderableWidget(standButton);
+
+    doubleDownButton = Button.builder(
+            Component.literal("Double"),
+            b ->
+                ClientPacketDistributor.sendToServer(
+                    new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DOUBLE_DOWN)))
+        .bounds(
+            startX + 3 * (buttonWidth + spacing),
+            buttonY,
+            buttonWidth,
+            (int) (20 * scaleFactor))
+        .build();
+    this.addRenderableWidget(doubleDownButton);
 
     // Set initial button states
     updateButtonStates();
@@ -314,6 +329,26 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
 
     // Stand button: enabled during player turn only
     standButton.active = (phase == BlackjackGame.GamePhase.PLAYER_TURN);
+
+    // Double Down button: enabled during player turn, can double down, and player has sufficient matching items
+    boolean canDoubleDown = game.canDoubleDown();
+    boolean hasMatchingItems = false;
+    
+    if (canDoubleDown && !wager.isEmpty()) {
+      // Check if player has matching items for the additional wager
+      ItemStack additionalWager = new ItemStack(wager.getItem(), wager.getCount());
+      
+      Inventory playerInv = Minecraft.getInstance().player.getInventory();
+      for (int i = 0; i < playerInv.getContainerSize(); i++) {
+        ItemStack slot = playerInv.getItem(i);
+        if (ItemStack.isSameItemSameComponents(slot, additionalWager) && slot.getCount() >= additionalWager.getCount()) {
+          hasMatchingItems = true;
+          break;
+        }
+      }
+    }
+    
+    doubleDownButton.active = canDoubleDown && hasMatchingItems;
   }
 
   private static ResourceLocation getCardTexture(String cardName) {
