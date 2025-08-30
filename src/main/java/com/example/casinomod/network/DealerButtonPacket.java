@@ -26,7 +26,8 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
     DEAL,
     HIT,
     STAND,
-    DOUBLE_DOWN;
+    DOUBLE_DOWN,
+    SPLIT;
 
     public static final Action[] VALUES = values();
 
@@ -85,6 +86,7 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
       case HIT -> handleHit(game, dealerBe, level, pos, player);
       case STAND -> handleStand(game, dealerBe, level, pos, player);
       case DOUBLE_DOWN -> handleDoubleDown(game, dealerBe, level, pos, player);
+      case SPLIT -> handleSplit(game, dealerBe, level, pos, player);
     }
   }
 
@@ -153,8 +155,10 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
       BlockPos pos,
       ServerPlayer player) {
     if (!game.canDoubleDown()) {
-      CasinoMod.LOGGER.warn("Cannot double down. Current phase: {}, Hand size: {}", 
-          game.getPhase(), game.getPlayerHand().size());
+      CasinoMod.LOGGER.warn(
+          "Cannot double down. Current phase: {}, Hand size: {}",
+          game.getPhase(),
+          game.getPlayerHand().size());
       return;
     }
 
@@ -168,11 +172,12 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
     // Try to extract matching wager from player's inventory for the double down
     ItemStack additionalWager = new ItemStack(currentWager.getItem(), currentWager.getCount());
     boolean extracted = false;
-    
+
     // Try to remove the additional wager from player's inventory
     for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
       ItemStack slot = player.getInventory().getItem(i);
-      if (ItemStack.isSameItemSameComponents(slot, additionalWager) && slot.getCount() >= additionalWager.getCount()) {
+      if (ItemStack.isSameItemSameComponents(slot, additionalWager)
+          && slot.getCount() >= additionalWager.getCount()) {
         slot.shrink(additionalWager.getCount());
         extracted = true;
         break;
@@ -180,8 +185,11 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
     }
 
     if (!extracted) {
-      player.sendSystemMessage(Component.literal("Cannot double down - insufficient matching items in inventory"));
-      CasinoMod.LOGGER.warn("Player {} cannot double down - insufficient matching items", player.getName().getString());
+      player.sendSystemMessage(
+          Component.literal("Cannot double down - insufficient matching items in inventory"));
+      CasinoMod.LOGGER.warn(
+          "Player {} cannot double down - insufficient matching items",
+          player.getName().getString());
       return;
     }
 
@@ -189,16 +197,82 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
     ItemStack doubledWager = currentWager.copy();
     doubledWager.setCount(currentWager.getCount() * 2);
     dealerBe.inventory.setStackInSlot(0, doubledWager);
-    
+
     // Update the stored wager amount
     dealerBe.setLastWager(doubledWager.copy());
 
     game.doubleDown();
     updateBlock(level, pos, dealerBe);
     proceedToNextPhaseIfNeeded(game, player, level, pos, dealerBe);
-    
-    CasinoMod.LOGGER.info("Player {} doubled down, wager doubled from {} to {}", 
-        player.getName().getString(), currentWager.getCount(), doubledWager.getCount());
+
+    CasinoMod.LOGGER.info(
+        "Player {} doubled down, wager doubled from {} to {}",
+        player.getName().getString(),
+        currentWager.getCount(),
+        doubledWager.getCount());
+  }
+
+  private static void handleSplit(
+      BlackjackGame game,
+      DealerBlockEntity dealerBe,
+      Level level,
+      BlockPos pos,
+      ServerPlayer player) {
+    if (!game.canSplit()) {
+      CasinoMod.LOGGER.warn(
+          "Cannot split. Current phase: {}, Has split: {}, Hand size: {}",
+          game.getPhase(),
+          game.hasSplit(),
+          game.getPlayerHand().size());
+      return;
+    }
+
+    // Get the current wager to match it for the split
+    ItemStack currentWager = dealerBe.inventory.getStackInSlot(0);
+    if (currentWager.isEmpty()) {
+      CasinoMod.LOGGER.warn("Cannot split - no wager found");
+      return;
+    }
+
+    // Try to extract matching wager from player's inventory for the split hand
+    ItemStack additionalWager = new ItemStack(currentWager.getItem(), currentWager.getCount());
+    boolean extracted = false;
+
+    // Try to remove the additional wager from player's inventory
+    for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
+      ItemStack slot = player.getInventory().getItem(i);
+      if (ItemStack.isSameItemSameComponents(slot, additionalWager)
+          && slot.getCount() >= additionalWager.getCount()) {
+        slot.shrink(additionalWager.getCount());
+        extracted = true;
+        break;
+      }
+    }
+
+    if (!extracted) {
+      player.sendSystemMessage(
+          Component.literal("Cannot split - insufficient matching items in inventory"));
+      CasinoMod.LOGGER.warn(
+          "Player {} cannot split - insufficient matching items", player.getName().getString());
+      return;
+    }
+
+    // Add the additional wager to the dealer inventory for the second hand
+    ItemStack doubledWager = currentWager.copy();
+    doubledWager.setCount(currentWager.getCount() * 2);
+    dealerBe.inventory.setStackInSlot(0, doubledWager);
+
+    // Update the stored wager amount
+    dealerBe.setLastWager(doubledWager.copy());
+
+    game.splitPairs();
+    updateBlock(level, pos, dealerBe);
+
+    CasinoMod.LOGGER.info(
+        "Player {} split pairs, wager doubled from {} to {}",
+        player.getName().getString(),
+        currentWager.getCount(),
+        doubledWager.getCount());
   }
 
   private static void proceedToNextPhaseIfNeeded(
@@ -208,7 +282,7 @@ public record DealerButtonPacket(BlockPos pos, Action action) implements CustomP
       BlockPos pos,
       DealerBlockEntity dealerBe) {
     // Proceed to dealer turn if game phase changed to dealer turn or finished
-    if ((game.getPhase() == GamePhase.DEALER_TURN || game.getPhase() == GamePhase.FINISHED) 
+    if ((game.getPhase() == GamePhase.DEALER_TURN || game.getPhase() == GamePhase.FINISHED)
         && level.getServer() != null) {
       BlackjackHandler.simulateDealerTurn(player, level, pos, dealerBe, game);
     }

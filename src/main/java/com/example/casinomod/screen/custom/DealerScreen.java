@@ -37,6 +37,7 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
   private Button hitButton;
   private Button standButton;
   private Button doubleDownButton;
+  private Button splitButton;
 
   public DealerScreen(DealerMenu menu, Inventory playerInventory, Component title) {
     super(menu, playerInventory, title);
@@ -55,57 +56,75 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
     int guiLeft = (this.width - scaledImageWidth) / 2;
 
     int centerX = guiLeft + scaledImageWidth / 2;
-    int buttonWidth = (int) (35 * scaleFactor); // Slightly smaller to fit 4 buttons
-    int spacing = (int) (8 * scaleFactor); // Reduced spacing
-    int totalWidth = 4 * buttonWidth + 3 * spacing;
+    int buttonWidth = (int) (30 * scaleFactor); // Smaller to fit 5 buttons
+    int spacing = (int) (6 * scaleFactor); // Reduced spacing
+    int totalWidth = 5 * buttonWidth + 4 * spacing;
     int startX = centerX - (totalWidth / 2);
     int buttonY =
         (this.height - scaledImageHeight) / 2 + scaledImageHeight - (int) (30 * scaleFactor);
 
-    dealButton = Button.builder(
-            Component.literal("Deal"),
-            b ->
-                ClientPacketDistributor.sendToServer(
-                    new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DEAL)))
-        .bounds(startX, buttonY, buttonWidth, (int) (20 * scaleFactor))
-        .build();
+    dealButton =
+        Button.builder(
+                Component.literal("Deal"),
+                b ->
+                    ClientPacketDistributor.sendToServer(
+                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DEAL)))
+            .bounds(startX, buttonY, buttonWidth, (int) (20 * scaleFactor))
+            .build();
     this.addRenderableWidget(dealButton);
 
-    hitButton = Button.builder(
-            Component.literal("Hit"),
-            b ->
-                ClientPacketDistributor.sendToServer(
-                    new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.HIT)))
-        .bounds(
-            startX + (buttonWidth + spacing), buttonY, buttonWidth, (int) (20 * scaleFactor))
-        .build();
+    hitButton =
+        Button.builder(
+                Component.literal("Hit"),
+                b ->
+                    ClientPacketDistributor.sendToServer(
+                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.HIT)))
+            .bounds(
+                startX + (buttonWidth + spacing), buttonY, buttonWidth, (int) (20 * scaleFactor))
+            .build();
     this.addRenderableWidget(hitButton);
 
-    standButton = Button.builder(
-            Component.literal("Stand"),
-            b ->
-                ClientPacketDistributor.sendToServer(
-                    new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.STAND)))
-        .bounds(
-            startX + 2 * (buttonWidth + spacing),
-            buttonY,
-            buttonWidth,
-            (int) (20 * scaleFactor))
-        .build();
+    standButton =
+        Button.builder(
+                Component.literal("Stand"),
+                b ->
+                    ClientPacketDistributor.sendToServer(
+                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.STAND)))
+            .bounds(
+                startX + 2 * (buttonWidth + spacing),
+                buttonY,
+                buttonWidth,
+                (int) (20 * scaleFactor))
+            .build();
     this.addRenderableWidget(standButton);
 
-    doubleDownButton = Button.builder(
-            Component.literal("Double"),
-            b ->
-                ClientPacketDistributor.sendToServer(
-                    new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DOUBLE_DOWN)))
-        .bounds(
-            startX + 3 * (buttonWidth + spacing),
-            buttonY,
-            buttonWidth,
-            (int) (20 * scaleFactor))
-        .build();
+    doubleDownButton =
+        Button.builder(
+                Component.literal("Double"),
+                b ->
+                    ClientPacketDistributor.sendToServer(
+                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.DOUBLE_DOWN)))
+            .bounds(
+                startX + 3 * (buttonWidth + spacing),
+                buttonY,
+                buttonWidth,
+                (int) (20 * scaleFactor))
+            .build();
     this.addRenderableWidget(doubleDownButton);
+
+    splitButton =
+        Button.builder(
+                Component.literal("Split"),
+                b ->
+                    ClientPacketDistributor.sendToServer(
+                        new DealerButtonPacket(menu.blockEntity.getBlockPos(), Action.SPLIT)))
+            .bounds(
+                startX + 4 * (buttonWidth + spacing),
+                buttonY,
+                buttonWidth,
+                (int) (20 * scaleFactor))
+            .build();
+    this.addRenderableWidget(splitButton);
 
     // Set initial button states
     updateButtonStates();
@@ -115,7 +134,7 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
   public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
     // Update button states based on current game state
     updateButtonStates();
-    
+
     super.render(guiGraphics, mouseX, mouseY, partialTick);
 
     BlackjackGame.Result result = menu.blockEntity.getGame().getResult();
@@ -139,17 +158,36 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
       int x = (this.width - this.font.width(message)) / 2;
       int y = this.height / 2 - this.font.lineHeight / 2;
       guiGraphics.drawString(this.font, message, x, y, color, false);
-
     }
 
     // Display hand values and bet information when cards are dealt
     BlackjackGame game = menu.blockEntity.getGame();
-    if (game.getPlayerHand().size() > 0 || game.getDealerHand().size() > 0) {
-      // Player hand value
-      int playerValue = game.getHandValue(game.getPlayerHand());
-      String playerText = "Player: " + playerValue;
-      if (playerValue > 21) {
-        playerText += " (BUST)";
+    int playerHandSize = game.getPlayerHand().size();
+    int dealerHandSize = game.getDealerHand().size();
+    if (playerHandSize > 0 || dealerHandSize > 0) {
+      // Player hand value(s) - show all hands if split
+      String playerText;
+      if (game.hasSplit()) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < game.getHandCount(); i++) {
+          if (i > 0) sb.append("  ");
+          List<Card> hand = game.getPlayerHand(i);
+          int handValue = game.getHandValue(hand);
+          sb.append("Hand ").append(i + 1).append(": ").append(handValue);
+          if (handValue > 21) {
+            sb.append(" (BUST)");
+          }
+          if (i == game.getCurrentHandIndex()) {
+            sb.append(" *"); // Mark active hand
+          }
+        }
+        playerText = sb.toString();
+      } else {
+        int playerValue = game.getHandValue(game.getPlayerHand());
+        playerText = "Player: " + playerValue;
+        if (playerValue > 21) {
+          playerText += " (BUST)";
+        }
       }
 
       // Dealer hand value (show partial during player turn)
@@ -184,11 +222,9 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
 
     // Show current bet amount - use the inventory slot instead of lastWager for now
     ItemStack currentBet = menu.blockEntity.inventory.getStackInSlot(0);
-    System.out.println("[DEBUG] Bet ItemStack from inventory: " + currentBet + ", isEmpty: " + currentBet.isEmpty());
     if (!currentBet.isEmpty()) {
       String betText =
           "Bet: " + currentBet.getCount() + " " + currentBet.getHoverName().getString();
-      System.out.println("[DEBUG] Bet text: " + betText);
       // Position bet in top-right corner
       int betX = this.width - this.font.width(betText) - 10;
       int betY = 20;
@@ -199,7 +235,6 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
       if (!lastWager.isEmpty()) {
         String betText =
             "Last Bet: " + lastWager.getCount() + " " + lastWager.getHoverName().getString();
-        System.out.println("[DEBUG] Last wager text: " + betText);
         int betX = this.width - this.font.width(betText) - 10;
         int betY = 20;
         guiGraphics.drawString(this.font, betText, betX, betY, 0xFFFFFFFF, false);
@@ -259,18 +294,52 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
         cardWidth,
         cardHeight);
 
-    // Player cards
+    // Player cards - render all hands if split
     int playerY = guiTop + (int) (130 * scaleFactor);
-    int playerStartX = centerX - (game.getPlayerHand().size() * cardSpacing / 2);
-    renderHand(
-        guiGraphics,
-        game.getPlayerHand(),
-        playerStartX,
-        playerY,
-        false,
-        cardSpacing,
-        cardWidth,
-        cardHeight);
+    if (game.hasSplit()) {
+      // Render multiple hands side by side
+      int totalHandsWidth = 0;
+      for (int i = 0; i < game.getHandCount(); i++) {
+        List<Card> hand = game.getPlayerHand(i);
+        totalHandsWidth += hand.size() * cardSpacing;
+      }
+      totalHandsWidth += (game.getHandCount() - 1) * cardSpacing * 2; // Extra spacing between hands
+
+      int currentX = centerX - (totalHandsWidth / 2);
+
+      for (int i = 0; i < game.getHandCount(); i++) {
+        List<Card> hand = game.getPlayerHand(i);
+
+        // Highlight active hand
+        boolean isActiveHand = (i == game.getCurrentHandIndex());
+        if (isActiveHand && game.getPhase() == BlackjackGame.GamePhase.PLAYER_TURN) {
+          // Draw a subtle background highlight for the active hand
+          int highlightWidth = hand.size() * cardSpacing + 10;
+          guiGraphics.fill(
+              currentX - 5,
+              playerY - 5,
+              currentX + highlightWidth,
+              playerY + cardHeight + 5,
+              0x30FFFFFF); // Semi-transparent white
+        }
+
+        renderHand(guiGraphics, hand, currentX, playerY, false, cardSpacing, cardWidth, cardHeight);
+
+        currentX += hand.size() * cardSpacing + cardSpacing * 2; // Move to next hand position
+      }
+    } else {
+      // Single hand rendering
+      int playerStartX = centerX - (game.getPlayerHand().size() * cardSpacing / 2);
+      renderHand(
+          guiGraphics,
+          game.getPlayerHand(),
+          playerStartX,
+          playerY,
+          false,
+          cardSpacing,
+          cardWidth,
+          cardHeight);
+    }
 
     BlackjackGame.Result result = game.getResult();
   }
@@ -330,25 +399,48 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
     // Stand button: enabled during player turn only
     standButton.active = (phase == BlackjackGame.GamePhase.PLAYER_TURN);
 
-    // Double Down button: enabled during player turn, can double down, and player has sufficient matching items
+    // Double Down button: enabled during player turn, can double down, and player has sufficient
+    // matching items
     boolean canDoubleDown = game.canDoubleDown();
     boolean hasMatchingItems = false;
-    
+
     if (canDoubleDown && !wager.isEmpty()) {
       // Check if player has matching items for the additional wager
       ItemStack additionalWager = new ItemStack(wager.getItem(), wager.getCount());
-      
+
       Inventory playerInv = Minecraft.getInstance().player.getInventory();
       for (int i = 0; i < playerInv.getContainerSize(); i++) {
         ItemStack slot = playerInv.getItem(i);
-        if (ItemStack.isSameItemSameComponents(slot, additionalWager) && slot.getCount() >= additionalWager.getCount()) {
+        if (ItemStack.isSameItemSameComponents(slot, additionalWager)
+            && slot.getCount() >= additionalWager.getCount()) {
           hasMatchingItems = true;
           break;
         }
       }
     }
-    
+
     doubleDownButton.active = canDoubleDown && hasMatchingItems;
+
+    // Split button: enabled during player turn, can split, and player has sufficient matching items
+    boolean canSplit = game.canSplit();
+    boolean hasMatchingItemsForSplit = false;
+
+    if (canSplit && !wager.isEmpty()) {
+      // Check if player has matching items for the additional wager
+      ItemStack additionalWager = new ItemStack(wager.getItem(), wager.getCount());
+
+      Inventory playerInv = Minecraft.getInstance().player.getInventory();
+      for (int i = 0; i < playerInv.getContainerSize(); i++) {
+        ItemStack slot = playerInv.getItem(i);
+        if (ItemStack.isSameItemSameComponents(slot, additionalWager)
+            && slot.getCount() >= additionalWager.getCount()) {
+          hasMatchingItemsForSplit = true;
+          break;
+        }
+      }
+    }
+
+    splitButton.active = canSplit && hasMatchingItemsForSplit;
   }
 
   private static ResourceLocation getCardTexture(String cardName) {

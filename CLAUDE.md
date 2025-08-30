@@ -114,12 +114,12 @@ CasinoMod is a Minecraft mod built with NeoForge that adds casino gaming functio
 - [x] Display hand values in the blackjack UI ✅
 - [x] Show current bet amount in the dealer screen ✅
 - [x] Implement action button state management (enable/disable based on game state) ✅
-- [ ] Add configurable Soft 17 rule for dealer behavior
+- [x] Add configurable Soft 17 rule for dealer behavior ✅
 
 ### P1 Priorities (High - Enhanced Gameplay)
-- [ ] Split Pairs functionality for matching cards
+- [x] Split Pairs functionality for matching cards ✅
 - [ ] Insurance side bet against dealer blackjack
-- [ ] Dealer blackjack peek with 10/Ace showing
+- [x] Dealer blackjack peek with 10/Ace showing ✅
 - [ ] Multi-deck support (2-8 deck shoes)
 - [ ] Betting limits enforcement (min/max)
 

@@ -33,7 +33,8 @@ public class Config {
   // Blackjack game configuration
   public static final ModConfigSpec.BooleanValue DEALER_HITS_SOFT_17 =
       BUILDER
-          .comment("Whether the dealer hits on Soft 17 (Ace counted as 11). True = dealer hits, False = dealer stands")
+          .comment(
+              "Whether the dealer hits on Soft 17 (Ace counted as 11). True = dealer hits, False = dealer stands")
           .define("dealerHitsSoft17", false);
 
   static final ModConfigSpec SPEC = BUILDER.build();

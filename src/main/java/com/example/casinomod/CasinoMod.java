@@ -93,6 +93,8 @@ public class CasinoMod {
   private void commonSetup(FMLCommonSetupEvent event) {
     // Some common setup code
     LOGGER.info("HELLO FROM COMMON SETUP");
+    // Log which Log4j2 configuration file is active
+    LOGGER.info("Using Log4j config: {}", System.getProperty("log4j.configurationFile"));
 
     if (Config.LOG_DIRT_BLOCK.getAsBoolean()) {
       LOGGER.info("DIRT BLOCK >> {}", BuiltInRegistries.BLOCK.getKey(Blocks.DIRT));

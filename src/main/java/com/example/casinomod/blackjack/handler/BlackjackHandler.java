@@ -5,7 +5,6 @@ import java.util.Objects;
 
 import com.example.casinomod.CasinoMod;
 import com.example.casinomod.blackjack.BlackjackGame;
-import com.example.casinomod.blackjack.Card;
 import com.example.casinomod.block.custom.DealerBlockEntity;
 import com.example.casinomod.util.ServerTaskScheduler;
 
@@ -37,10 +36,10 @@ public class BlackjackHandler {
 
     List<Runnable> drawSteps =
         List.of(
-            () -> drawCard(game, game.getPlayerHand(), "Player (1st)", level, pos, dealerBe),
-            () -> drawCard(game, game.getDealerHand(), "Dealer (1st)", level, pos, dealerBe),
-            () -> drawCard(game, game.getPlayerHand(), "Player (2nd)", level, pos, dealerBe),
-            () -> drawCard(game, game.getDealerHand(), "Dealer (2nd)", level, pos, dealerBe),
+            () -> dealPlayerCard(game, "Player (1st)", level, pos, dealerBe),
+            () -> dealDealerCard(game, "Dealer (1st)", level, pos, dealerBe),
+            () -> dealPlayerCard(game, "Player (2nd)", level, pos, dealerBe),
+            () -> dealDealerCard(game, "Dealer (2nd)", level, pos, dealerBe),
             () -> {
               // Check for dealer blackjack after all initial cards are dealt
               if (game.isDealerBlackjack()) {
@@ -57,16 +56,17 @@ public class BlackjackHandler {
     scheduleDrawSteps(drawSteps, serverLevel, 0);
   }
 
-  private static void drawCard(
-      BlackjackGame game,
-      List<Card> hand,
-      String who,
-      Level level,
-      BlockPos pos,
-      DealerBlockEntity dealerBe) {
-    Card card = game.draw();
-    hand.add(card);
-    CasinoMod.LOGGER.debug("[BlackjackHandler] {} draws {}", who, card);
+  private static void dealPlayerCard(
+      BlackjackGame game, String who, Level level, BlockPos pos, DealerBlockEntity dealerBe) {
+    game.dealToPlayer();
+    CasinoMod.LOGGER.debug("[BlackjackHandler] {} draws (player)", who);
+    updateBlock(level, pos, dealerBe);
+  }
+
+  private static void dealDealerCard(
+      BlackjackGame game, String who, Level level, BlockPos pos, DealerBlockEntity dealerBe) {
+    game.dealToDealer();
+    CasinoMod.LOGGER.debug("[BlackjackHandler] {} draws (dealer)", who);
     updateBlock(level, pos, dealerBe);
   }
 
@@ -157,15 +157,16 @@ public class BlackjackHandler {
     ItemStack wager = dealerBe.inventory.getStackInSlot(0);
     if (!wager.isEmpty()) {
       dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
-      
+
       // Calculate effective wager (doubled if player doubled down)
       int effectiveWager = game.hasDoubledDown() ? wager.getCount() * 2 : wager.getCount();
-      
+
       // Blackjack pays 3:2 (1.5x payout), regular win pays 1:1 (1x payout)
       // Note: Blackjack bonus doesn't apply when doubled down
       int totalReturnCount;
       if (game.isBlackjack() && !game.hasDoubledDown()) {
-        totalReturnCount = effectiveWager + (wager.getCount() * 3 / 2); // 1.5x payout on original wager
+        totalReturnCount =
+            effectiveWager + (wager.getCount() * 3 / 2); // 1.5x payout on original wager
       } else {
         totalReturnCount = effectiveWager * 2; // 1x payout on effective wager
       }
@@ -188,13 +189,14 @@ public class BlackjackHandler {
     }
   }
 
-  private static void handleLoss(ServerPlayer player, Level level, BlockPos pos, DealerBlockEntity dealerBe) {
+  private static void handleLoss(
+      ServerPlayer player, Level level, BlockPos pos, DealerBlockEntity dealerBe) {
     // Extract the wager from inventory since player lost
     ItemStack wager = dealerBe.inventory.getStackInSlot(0);
     if (!wager.isEmpty()) {
       dealerBe.inventory.setStackInSlot(0, ItemStack.EMPTY);
     }
-    
+
     player.sendSystemMessage(Component.literal("You lost your wager."));
     playFeedback(level, pos, SoundEvents.VILLAGER_NO, ParticleTypes.SMOKE);
   }

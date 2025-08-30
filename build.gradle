@@ -47,7 +47,7 @@ runs {
         // Recommended logging level for the console
         // You can set various levels here.
         // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-        systemProperty 'forge.logging.console.level', 'debug'
+        systemProperty 'forge.logging.console.level', 'info'
         systemProperty 'log4j.configurationFile', "${projectDir}/src/main/resources/log4j2.xml"
 
         modSource project.sourceSets.main
