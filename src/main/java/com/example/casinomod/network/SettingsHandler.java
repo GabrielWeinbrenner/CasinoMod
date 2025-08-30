@@ -48,9 +48,13 @@ public class SettingsHandler {
               dealerEntity.setNumberOfDecks(data.numberOfDecks());
               dealerEntity.setMinBet(data.minBet());
               dealerEntity.setMaxBet(data.maxBet());
-              
+
               // Sync changes to client
-              level.sendBlockUpdated(data.blockPos(), level.getBlockState(data.blockPos()), level.getBlockState(data.blockPos()), 3);
+              level.sendBlockUpdated(
+                  data.blockPos(),
+                  level.getBlockState(data.blockPos()),
+                  level.getBlockState(data.blockPos()),
+                  3);
 
               CasinoMod.LOGGER.info(
                   "[SettingsHandler] Updated settings for dealer block at {}: surrender={}, soft17={}, decks={}, betLimits={}-{}",

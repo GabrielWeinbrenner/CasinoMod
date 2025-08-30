@@ -1,0 +1,127 @@
+{
+  "textures": {
+    "top": "minecraft:block/green_wool",
+    "side": "minecraft:block/oak_planks", 
+    "bottom": "minecraft:block/dark_oak_planks",
+    "particle": "minecraft:block/green_wool"
+  },
+  "elements": [
+    {
+      "comment": "Table Surface - Center Circle",
+      "from": [2, 10, 2],
+      "to": [14, 12, 14],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#top"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Table Surface - North Extension",
+      "from": [4, 10, 0],
+      "to": [12, 12, 2],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#top"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Table Surface - South Extension", 
+      "from": [4, 10, 14],
+      "to": [12, 12, 16],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#top"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Table Surface - West Extension",
+      "from": [0, 10, 4],
+      "to": [2, 12, 12],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#top"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Table Surface - East Extension",
+      "from": [14, 10, 4],
+      "to": [16, 12, 12],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#top"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Table Leg 1",
+      "from": [2, 0, 2],
+      "to": [4, 10, 4],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#side"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Table Leg 2", 
+      "from": [12, 0, 2],
+      "to": [14, 10, 4],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#side"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Table Leg 3",
+      "from": [2, 0, 12],
+      "to": [4, 10, 14],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#side"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    },
+    {
+      "comment": "Table Leg 4",
+      "from": [12, 0, 12],
+      "to": [14, 10, 14],
+      "faces": {
+        "down": {"texture": "#bottom"},
+        "up": {"texture": "#side"},
+        "north": {"texture": "#side"},
+        "south": {"texture": "#side"},
+        "west": {"texture": "#side"},
+        "east": {"texture": "#side"}
+      }
+    }
+  ]
+}

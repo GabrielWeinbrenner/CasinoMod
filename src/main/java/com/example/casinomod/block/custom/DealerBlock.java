@@ -25,7 +25,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class DealerBlock extends BaseEntityBlock {
-  public static final VoxelShape SHAPE = Block.box(2, 0, 2, 14, 13, 14);
+  public static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 12, 16);
   public static final MapCodec<DealerBlock> CODEC = simpleCodec(DealerBlock::new);
 
   public DealerBlock(Properties properties) {

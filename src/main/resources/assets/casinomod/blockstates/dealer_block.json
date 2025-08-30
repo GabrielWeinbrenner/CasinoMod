@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "casinomod:block/dealer_block"
+    }
+  }
+}

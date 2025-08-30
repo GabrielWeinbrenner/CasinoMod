@@ -22,7 +22,7 @@ public class ModBlocks {
           "dealer_block",
           (properties) ->
               new DealerBlock(
-                  properties.strength(4f).requiresCorrectToolForDrops().sound(SoundType.AMETHYST)));
+                  properties.strength(4f).requiresCorrectToolForDrops().sound(SoundType.WOOD)));
 
   private static <T extends Block> DeferredBlock<T> registerBlock(
       String name, Function<BlockBehaviour.Properties, T> function) {

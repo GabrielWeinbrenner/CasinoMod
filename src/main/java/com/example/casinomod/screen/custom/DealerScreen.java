@@ -417,7 +417,8 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
     int settingsY = panelY + 6 + this.font.lineHeight + 10 + this.font.lineHeight + 5;
 
     // Surrender checkbox - click anywhere on the line
-    String surrenderText = (menu.blockEntity.isSurrenderAllowed() ? "[✓]" : "[ ]") + " Surrender allowed";
+    String surrenderText =
+        (menu.blockEntity.isSurrenderAllowed() ? "[✓]" : "[ ]") + " Surrender allowed";
     if (mouseX >= panelX + 6
         && mouseX <= panelX + 6 + this.font.width(surrenderText)
         && mouseY >= settingsY
@@ -432,8 +433,9 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
     }
     settingsY += this.font.lineHeight + 2;
 
-    // Soft 17 checkbox - click anywhere on the line  
-    String soft17Text = (menu.blockEntity.isDealerHitsSoft17() ? "[✓]" : "[ ]") + " Dealer hits soft 17";
+    // Soft 17 checkbox - click anywhere on the line
+    String soft17Text =
+        (menu.blockEntity.isDealerHitsSoft17() ? "[✓]" : "[ ]") + " Dealer hits soft 17";
     if (mouseX >= panelX + 6
         && mouseX <= panelX + 6 + this.font.width(soft17Text)
         && mouseY >= settingsY

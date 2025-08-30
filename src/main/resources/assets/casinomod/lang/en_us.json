@@ -1,7 +1,7 @@
 {
-  "itemGroup.casinomod": "Example Mod Tab",
-  "block.casinomod.example_block": "Example Block",
-  "item.casinomod.example_item": "Example Item",
+  "itemGroup.casinomod": "Casino Mod",
+  "block.casinomod.dealer_block": "Dealer Block",
+  "item.casinomod.dealer_block": "Dealer Block",
 
   "casinomod.configuration.title": "CasinoMod Configs",
   "casinomod.configuration.section.casinomod.common.toml": "CasinoMod Configs",
