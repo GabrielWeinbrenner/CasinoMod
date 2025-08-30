@@ -15,12 +15,12 @@ class DoubleDownTest {
     game.startGame();
     
     // Set up initial two cards for player (simulate dealing)
-    game.getPlayerHand().add(new Card(7, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(4, Suit.SPADES));
+    game.getPlayerHandDirect().add(new Card(7, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(4, Suit.SPADES));
     
     // Set up dealer cards
-    game.getDealerHand().add(new Card(10, Suit.CLUBS));
-    game.getDealerHand().add(new Card(6, Suit.DIAMONDS));
+    game.getDealerHandDirect().add(new Card(10, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(6, Suit.DIAMONDS));
   }
 
   @Test
@@ -33,7 +33,7 @@ class DoubleDownTest {
   @Test
   void testCannotDoubleDownWithThreeCards() {
     // Add a third card
-    game.getPlayerHand().add(new Card(3, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(3, Suit.HEARTS));
     
     assertFalse(game.canDoubleDown());
   }
@@ -88,14 +88,14 @@ class DoubleDownTest {
   @Test
   void testDoubleDownAfterBustFinishesGame() {
     // Clear hand and set up a hand that will bust when doubled down
-    game.getPlayerHand().clear();
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS)); // 10
-    game.getPlayerHand().add(new Card(9, Suit.SPADES));  // 19 total
+    game.getPlayerHandDirect().clear();
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS)); // 10
+    game.getPlayerHandDirect().add(new Card(9, Suit.SPADES));  // 19 total
     
     // Force next card to be high to guarantee bust
     // We'll manually add a card that causes bust
-    game.getPlayerHand().add(new Card(5, Suit.CLUBS)); // Would be 24, but we remove it first
-    game.getPlayerHand().remove(2); // Remove the extra card
+    game.getPlayerHandDirect().add(new Card(5, Suit.CLUBS)); // Would be 24, but we remove it first
+    game.getPlayerHandDirect().remove(2); // Remove the extra card
     
     // Now double down - the draw() method will get a random card
     game.doubleDown();
@@ -134,7 +134,7 @@ class DoubleDownTest {
   @Test
   void testDoubleDownWithThreeCardsDoesNothing() {
     // Add third card first
-    game.getPlayerHand().add(new Card(2, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(2, Suit.HEARTS));
     int initialHandSize = game.getPlayerHand().size();
     boolean initialDoubledDown = game.hasDoubledDown();
     
@@ -175,9 +175,9 @@ class DoubleDownTest {
   @Test
   void testDoubleDownWithBlackjackScenario() {
     // Set up a blackjack hand (but this shouldn't be possible in real game)
-    game.getPlayerHand().clear();
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS)); // Ace
-    game.getPlayerHand().add(new Card(10, Suit.SPADES)); // 10
+    game.getPlayerHandDirect().clear();
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS)); // Ace
+    game.getPlayerHandDirect().add(new Card(10, Suit.SPADES)); // 10
     
     assertTrue(game.isBlackjack());
     assertTrue(game.canDoubleDown()); // Technically possible with 2 cards

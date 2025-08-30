@@ -32,11 +32,11 @@ class BlackjackHandlerTest {
     game.startGame();
     game.setPhase(BlackjackGame.GamePhase.DEALER_TURN);
 
-    game.getDealerHand().add(game.draw());
-    game.getDealerHand().add(game.draw());
+    game.getDealerHandDirect().add(game.draw());
+    game.getDealerHandDirect().add(game.draw());
 
     int initialHandSize = game.getDealerHand().size();
-    boolean dealerContinues = game.hitDealer();
+    boolean dealerContinues = game.hitDealer(false);
 
     assertTrue(game.getDealerHand().size() >= initialHandSize);
 
@@ -63,7 +63,7 @@ class BlackjackHandlerTest {
     assertEquals(BlackjackGame.GamePhase.DEALER_TURN, game.getPhase());
 
     while (game.getPhase() == BlackjackGame.GamePhase.DEALER_TURN) {
-      boolean dealerContinues = game.hitDealer();
+      boolean dealerContinues = game.hitDealer(false);
       if (!dealerContinues) {
         break;
       }
@@ -78,12 +78,12 @@ class BlackjackHandlerTest {
     BlackjackGame game = new BlackjackGame();
     game.startGame();
 
-    game.getPlayerHand().clear();
-    game.getPlayerHand()
+    game.getPlayerHandDirect().clear();
+    game.getPlayerHandDirect()
         .add(
             new com.example.casinomod.blackjack.Card(
                 1, com.example.casinomod.blackjack.Suit.HEARTS));
-    game.getPlayerHand()
+    game.getPlayerHandDirect()
         .add(
             new com.example.casinomod.blackjack.Card(
                 10, com.example.casinomod.blackjack.Suit.SPADES));
@@ -91,7 +91,7 @@ class BlackjackHandlerTest {
     assertTrue(game.isBlackjack());
 
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
-    game.getDealerHand().clear();
+    game.getDealerHandDirect().clear();
     game.getDealerHand()
         .add(
             new com.example.casinomod.blackjack.Card(

@@ -84,10 +84,10 @@ class BlackjackGameTest {
     game.startGame();
     game.setPhase(BlackjackGame.GamePhase.DEALER_TURN);
 
-    game.getDealerHand().add(new Card(5, Suit.HEARTS));
+    game.getDealerHandDirect().add(new Card(5, Suit.HEARTS));
 
     int initialSize = game.getDealerHand().size();
-    boolean shouldContinue = game.hitDealer();
+    boolean shouldContinue = game.hitDealer(false);
 
     assertEquals(initialSize + 1, game.getDealerHand().size());
     assertTrue(shouldContinue);
@@ -98,11 +98,11 @@ class BlackjackGameTest {
     game.startGame();
     game.setPhase(BlackjackGame.GamePhase.DEALER_TURN);
 
-    game.getDealerHand().add(new Card(10, Suit.HEARTS));
-    game.getDealerHand().add(new Card(7, Suit.DIAMONDS));
+    game.getDealerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getDealerHandDirect().add(new Card(7, Suit.DIAMONDS));
 
     int initialSize = game.getDealerHand().size();
-    boolean shouldContinue = game.hitDealer();
+    boolean shouldContinue = game.hitDealer(false);
 
     assertEquals(initialSize, game.getDealerHand().size());
     assertFalse(shouldContinue);
@@ -113,11 +113,11 @@ class BlackjackGameTest {
   void testDetermineResult_PlayerWins() {
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(9, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(9, Suit.DIAMONDS));
 
-    game.getDealerHand().add(new Card(10, Suit.CLUBS));
-    game.getDealerHand().add(new Card(7, Suit.SPADES));
+    game.getDealerHandDirect().add(new Card(10, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(7, Suit.SPADES));
 
     assertEquals(BlackjackGame.Result.WIN, game.determineResult());
   }
@@ -126,11 +126,11 @@ class BlackjackGameTest {
   void testDetermineResult_PlayerLoses() {
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(7, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(7, Suit.DIAMONDS));
 
-    game.getDealerHand().add(new Card(10, Suit.CLUBS));
-    game.getDealerHand().add(new Card(9, Suit.SPADES));
+    game.getDealerHandDirect().add(new Card(10, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(9, Suit.SPADES));
 
     assertEquals(BlackjackGame.Result.LOSE, game.determineResult());
   }
@@ -139,11 +139,11 @@ class BlackjackGameTest {
   void testDetermineResult_Draw() {
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(8, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(8, Suit.DIAMONDS));
 
-    game.getDealerHand().add(new Card(9, Suit.CLUBS));
-    game.getDealerHand().add(new Card(9, Suit.SPADES));
+    game.getDealerHandDirect().add(new Card(9, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(9, Suit.SPADES));
 
     assertEquals(BlackjackGame.Result.DRAW, game.determineResult());
   }
@@ -152,12 +152,12 @@ class BlackjackGameTest {
   void testDetermineResult_PlayerBusted() {
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(10, Suit.DIAMONDS));
-    game.getPlayerHand().add(new Card(5, Suit.CLUBS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(5, Suit.CLUBS));
 
-    game.getDealerHand().add(new Card(10, Suit.SPADES));
-    game.getDealerHand().add(new Card(7, Suit.HEARTS));
+    game.getDealerHandDirect().add(new Card(10, Suit.SPADES));
+    game.getDealerHandDirect().add(new Card(7, Suit.HEARTS));
 
     assertEquals(BlackjackGame.Result.LOSE, game.determineResult());
   }
@@ -166,12 +166,12 @@ class BlackjackGameTest {
   void testDetermineResult_DealerBusted() {
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(8, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(8, Suit.DIAMONDS));
 
-    game.getDealerHand().add(new Card(10, Suit.CLUBS));
-    game.getDealerHand().add(new Card(10, Suit.SPADES));
-    game.getDealerHand().add(new Card(5, Suit.HEARTS));
+    game.getDealerHandDirect().add(new Card(10, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(10, Suit.SPADES));
+    game.getDealerHandDirect().add(new Card(5, Suit.HEARTS));
 
     assertEquals(BlackjackGame.Result.WIN, game.determineResult());
   }
@@ -185,25 +185,25 @@ class BlackjackGameTest {
 
   @Test
   void testIsBlackjack_True() {
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(10, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.DIAMONDS));
 
     assertTrue(game.isBlackjack());
   }
 
   @Test
   void testIsBlackjack_FalseWrongTotal() {
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(9, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(9, Suit.DIAMONDS));
 
     assertFalse(game.isBlackjack());
   }
 
   @Test
   void testIsBlackjack_FalseWrongCardCount() {
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(5, Suit.DIAMONDS));
-    game.getPlayerHand().add(new Card(5, Suit.CLUBS));
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(5, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(5, Suit.CLUBS));
 
     assertFalse(game.isBlackjack());
   }
@@ -212,11 +212,11 @@ class BlackjackGameTest {
   void testGetResult_Finished() {
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(9, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(9, Suit.DIAMONDS));
 
-    game.getDealerHand().add(new Card(10, Suit.CLUBS));
-    game.getDealerHand().add(new Card(7, Suit.SPADES));
+    game.getDealerHandDirect().add(new Card(10, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(7, Suit.SPADES));
 
     assertEquals(BlackjackGame.Result.WIN, game.getResult());
   }
@@ -245,8 +245,8 @@ class BlackjackGameTest {
   void testPlayerBustTransitionsToFinished() {
     game.startGame();
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(10, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.DIAMONDS));
 
     game.hitPlayer();
 
@@ -256,8 +256,8 @@ class BlackjackGameTest {
   @Test
   void testHandValueCalculation_WithAces() {
     game.startGame();
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(5, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(5, Suit.DIAMONDS));
 
     game.hitPlayer();
     Card lastCard = game.getPlayerHand().get(game.getPlayerHand().size() - 1);
@@ -270,9 +270,9 @@ class BlackjackGameTest {
 
   @Test
   void testMultipleAcesHandling() {
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(1, Suit.DIAMONDS));
-    game.getPlayerHand().add(new Card(9, Suit.CLUBS));
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(1, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(9, Suit.CLUBS));
 
     List<Card> hand = game.getPlayerHand();
     int total = 0;

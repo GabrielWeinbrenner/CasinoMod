@@ -13,8 +13,8 @@ class PayoutTest {
     BlackjackGame game = new BlackjackGame();
 
     // Set up blackjack hand (21 with 2 cards)
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS)); // Ace
-    game.getPlayerHand().add(new Card(10, Suit.SPADES)); // 10
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS)); // Ace
+    game.getPlayerHandDirect().add(new Card(10, Suit.SPADES)); // 10
 
     assertTrue(game.isBlackjack());
 
@@ -29,9 +29,9 @@ class PayoutTest {
     BlackjackGame game = new BlackjackGame();
 
     // Set up regular win hand (21 with 3+ cards)
-    game.getPlayerHand().add(new Card(7, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(7, Suit.DIAMONDS));
-    game.getPlayerHand().add(new Card(7, Suit.CLUBS));
+    game.getPlayerHandDirect().add(new Card(7, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(7, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(7, Suit.CLUBS));
 
     assertFalse(game.isBlackjack());
 

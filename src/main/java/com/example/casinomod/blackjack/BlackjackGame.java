@@ -5,6 +5,7 @@ import java.util.*;
 import javax.annotation.Nullable;
 
 import com.example.casinomod.CasinoMod;
+import com.example.casinomod.Config;
 
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -182,14 +183,26 @@ public class BlackjackGame implements ValueIOSerializable {
   // ─────────────── Dealer AI ───────────────
 
   public boolean hitDealer() {
+    return hitDealer(Config.DEALER_HITS_SOFT_17.get());
+  }
+
+  /**
+   * Dealer AI logic with configurable soft 17 rule. Public for testing.
+   * @param dealerHitsSoft17 true if dealer should hit soft 17, false if dealer should stand
+   * @return true if dealer took another card, false if dealer stands or game ended
+   */
+  public boolean hitDealer(boolean dealerHitsSoft17) {
     if (phase != GamePhase.DEALER_TURN) {
       CasinoMod.LOGGER.warn("[BlackjackGame] Cannot hit dealer: Phase is {}", phase);
       return false;
     }
 
     int dealerValue = getHandValue(dealerHand);
-    if (dealerValue >= 17) {
-      CasinoMod.LOGGER.debug("[BlackjackGame] Dealer stands at {}", dealerValue);
+    
+    // Check if dealer should stand based on soft 17 rule
+    if (dealerValue > 17 || (dealerValue == 17 && shouldDealerStandOn17(dealerHitsSoft17))) {
+      CasinoMod.LOGGER.debug("[BlackjackGame] Dealer stands at {} (soft 17 rule: {})", 
+          dealerValue, !dealerHitsSoft17);
       phase = GamePhase.FINISHED;
       return false;
     }
@@ -198,12 +211,38 @@ public class BlackjackGame implements ValueIOSerializable {
     dealerHand.add(drawn);
     CasinoMod.LOGGER.debug("[BlackjackGame] Dealer hits and draws {}", drawn);
 
-    if (getHandValue(dealerHand) >= 17) {
+    // Check again after drawing
+    dealerValue = getHandValue(dealerHand);
+    if (dealerValue > 17 || (dealerValue == 17 && shouldDealerStandOn17(dealerHitsSoft17))) {
       phase = GamePhase.FINISHED;
       return false;
     }
 
     return true;
+  }
+
+  /**
+   * Determines if the dealer should stand on 17 based on the soft 17 configuration.
+   * @return true if dealer should stand, false if dealer should hit
+   */
+  private boolean shouldDealerStandOn17() {
+    return shouldDealerStandOn17(Config.DEALER_HITS_SOFT_17.get());
+  }
+
+  /**
+   * Determines if the dealer should stand on 17 based on the provided soft 17 configuration.
+   * This method is package-private for testing purposes.
+   * @param dealerHitsSoft17 true if dealer should hit soft 17, false if dealer should stand
+   * @return true if dealer should stand, false if dealer should hit
+   */
+  boolean shouldDealerStandOn17(boolean dealerHitsSoft17) {
+    // If dealer hits soft 17 is enabled, only stand on hard 17
+    if (dealerHitsSoft17) {
+      return !isSoftSeventeen(dealerHand);
+    } else {
+      // Dealer stands on all 17s (soft and hard)
+      return true;
+    }
   }
 
   // ─────────────── Result Evaluation ───────────────
@@ -286,6 +325,39 @@ public class BlackjackGame implements ValueIOSerializable {
     return total;
   }
 
+  /**
+   * Checks if a hand is a "soft 17" - total of 17 with at least one Ace counted as 11.
+   * Examples: A-6, A-2-4, A-A-5, etc.
+   */
+  public boolean isSoftSeventeen(List<Card> hand) {
+    if (getHandValue(hand) != 17) {
+      return false;
+    }
+    
+    // Count aces and calculate if any ace is being counted as 11
+    int aceCount = 0;
+    int totalWithoutAces = 0;
+    
+    for (Card card : hand) {
+      if (card.isAce()) {
+        aceCount++;
+      } else {
+        totalWithoutAces += card.getBlackjackValue();
+      }
+    }
+    
+    // If we have aces and the total is 17, check if any ace is counted as 11
+    if (aceCount > 0) {
+      // Try counting all aces as 1 first
+      int minTotal = totalWithoutAces + aceCount;
+      
+      // If we can add 10 to make exactly 17, then we have a soft 17
+      return minTotal + 10 == 17;
+    }
+    
+    return false;
+  }
+
   private String formatHand(List<Card> hand) {
     return hand.stream().map(Card::toString).reduce((a, b) -> a + ", " + b).orElse("(empty)");
   }
@@ -293,11 +365,11 @@ public class BlackjackGame implements ValueIOSerializable {
   // ─────────────── Accessors ───────────────
 
   public List<Card> getPlayerHand() {
-    return playerHand;
+    return new ArrayList<>(playerHand);
   }
 
   public List<Card> getDealerHand() {
-    return dealerHand;
+    return new ArrayList<>(dealerHand);
   }
 
   public GamePhase getPhase() {
@@ -306,5 +378,25 @@ public class BlackjackGame implements ValueIOSerializable {
 
   public void setPhase(GamePhase phase) {
     this.phase = phase;
+  }
+
+  // ─────────────── Testing Helper Methods ───────────────
+  // These methods provide direct access for testing purposes only
+  // They should NOT be used in production code
+
+  /**
+   * Gets the actual player hand list for testing purposes.
+   * WARNING: This breaks encapsulation and should only be used in tests!
+   */
+  public List<Card> getPlayerHandDirect() {
+    return playerHand;
+  }
+
+  /**
+   * Gets the actual dealer hand list for testing purposes.
+   * WARNING: This breaks encapsulation and should only be used in tests!
+   */
+  public List<Card> getDealerHandDirect() {
+    return dealerHand;
   }
 }

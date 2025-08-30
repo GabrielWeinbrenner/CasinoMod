@@ -18,8 +18,8 @@ class HandlerLogicTest {
   void testWinRewardCalculation() {
     BlackjackGame game = new BlackjackGame();
 
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(10, Suit.SPADES));
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.SPADES));
 
     boolean isBlackjack = game.isBlackjack();
     int baseWager = 10;
@@ -32,8 +32,8 @@ class HandlerLogicTest {
   void testRegularWinRewardCalculation() {
     BlackjackGame game = new BlackjackGame();
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(9, Suit.SPADES));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(9, Suit.SPADES));
 
     boolean isBlackjack = game.isBlackjack();
     int baseWager = 5;
@@ -48,8 +48,8 @@ class HandlerLogicTest {
       int card1Value, int card2Value, boolean expectedBlackjack, int expectedReward) {
     BlackjackGame game = new BlackjackGame();
 
-    game.getPlayerHand().add(new Card(card1Value, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(card2Value, Suit.SPADES));
+    game.getPlayerHandDirect().add(new Card(card1Value, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(card2Value, Suit.SPADES));
 
     boolean isBlackjack = game.isBlackjack();
     int baseWager = expectedReward / (isBlackjack ? 3 : 2);
@@ -65,13 +65,13 @@ class HandlerLogicTest {
     game.startGame();
     game.setPhase(BlackjackGame.GamePhase.DEALER_TURN);
 
-    game.getDealerHand().add(new Card(5, Suit.HEARTS));
-    game.getDealerHand().add(new Card(6, Suit.DIAMONDS));
+    game.getDealerHandDirect().add(new Card(5, Suit.HEARTS));
+    game.getDealerHandDirect().add(new Card(6, Suit.DIAMONDS));
 
     boolean shouldContinue = true;
     int drawCount = 0;
     while (shouldContinue && drawCount < 10) {
-      shouldContinue = game.hitDealer();
+      shouldContinue = game.hitDealer(false);
       drawCount++;
     }
 
@@ -85,10 +85,10 @@ class HandlerLogicTest {
     game.startGame();
     game.setPhase(BlackjackGame.GamePhase.DEALER_TURN);
 
-    game.getDealerHand().add(new Card(10, Suit.HEARTS));
-    game.getDealerHand().add(new Card(7, Suit.DIAMONDS));
+    game.getDealerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getDealerHandDirect().add(new Card(7, Suit.DIAMONDS));
 
-    boolean shouldContinue = game.hitDealer();
+    boolean shouldContinue = game.hitDealer(false);
 
     assertFalse(shouldContinue);
     assertEquals(BlackjackGame.GamePhase.FINISHED, game.getPhase());
@@ -100,10 +100,10 @@ class HandlerLogicTest {
     game.startGame();
     game.setPhase(BlackjackGame.GamePhase.DEALER_TURN);
 
-    game.getDealerHand().add(new Card(1, Suit.HEARTS));
-    game.getDealerHand().add(new Card(6, Suit.DIAMONDS));
+    game.getDealerHandDirect().add(new Card(1, Suit.HEARTS));
+    game.getDealerHandDirect().add(new Card(6, Suit.DIAMONDS));
 
-    boolean shouldContinue = game.hitDealer();
+    boolean shouldContinue = game.hitDealer(false);
 
     // Current implementation: dealer stands on soft 17
     assertFalse(shouldContinue);
@@ -143,11 +143,11 @@ class HandlerLogicTest {
     BlackjackGame game = new BlackjackGame();
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(10, Suit.SPADES));
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.SPADES));
 
-    game.getDealerHand().add(new Card(10, Suit.CLUBS));
-    game.getDealerHand().add(new Card(8, Suit.DIAMONDS));
+    game.getDealerHandDirect().add(new Card(10, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(8, Suit.DIAMONDS));
 
     BlackjackGame.Result result = game.determineResult();
     boolean isBlackjack = game.isBlackjack();
@@ -165,12 +165,12 @@ class HandlerLogicTest {
     BlackjackGame game = new BlackjackGame();
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(5, Suit.DIAMONDS));
-    game.getPlayerHand().add(new Card(8, Suit.SPADES));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(5, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(8, Suit.SPADES));
 
-    game.getDealerHand().add(new Card(10, Suit.CLUBS));
-    game.getDealerHand().add(new Card(9, Suit.HEARTS));
+    game.getDealerHandDirect().add(new Card(10, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(9, Suit.HEARTS));
 
     BlackjackGame.Result result = game.determineResult();
     assertEquals(BlackjackGame.Result.LOSE, result);
@@ -184,11 +184,11 @@ class HandlerLogicTest {
     BlackjackGame game = new BlackjackGame();
     game.setPhase(BlackjackGame.GamePhase.FINISHED);
 
-    game.getPlayerHand().add(new Card(10, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(8, Suit.DIAMONDS));
+    game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(8, Suit.DIAMONDS));
 
-    game.getDealerHand().add(new Card(9, Suit.CLUBS));
-    game.getDealerHand().add(new Card(9, Suit.SPADES));
+    game.getDealerHandDirect().add(new Card(9, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(9, Suit.SPADES));
 
     BlackjackGame.Result result = game.determineResult();
     assertEquals(BlackjackGame.Result.DRAW, result);
@@ -210,7 +210,7 @@ class HandlerLogicTest {
     assertEquals(BlackjackGame.GamePhase.DEALER_TURN, game.getPhase());
 
     while (game.getPhase() == BlackjackGame.GamePhase.DEALER_TURN) {
-      boolean continues = game.hitDealer();
+      boolean continues = game.hitDealer(false);
       if (!continues) break;
     }
 

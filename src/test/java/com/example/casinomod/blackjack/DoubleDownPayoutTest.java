@@ -18,12 +18,12 @@ class DoubleDownPayoutTest {
     game.startGame();
     
     // Set up initial two cards for player
-    game.getPlayerHand().add(new Card(7, Suit.HEARTS));
-    game.getPlayerHand().add(new Card(4, Suit.SPADES));
+    game.getPlayerHandDirect().add(new Card(7, Suit.HEARTS));
+    game.getPlayerHandDirect().add(new Card(4, Suit.SPADES));
     
     // Set up dealer cards  
-    game.getDealerHand().add(new Card(10, Suit.CLUBS));
-    game.getDealerHand().add(new Card(6, Suit.DIAMONDS));
+    game.getDealerHandDirect().add(new Card(10, Suit.CLUBS));
+    game.getDealerHandDirect().add(new Card(6, Suit.DIAMONDS));
   }
 
   @Test
@@ -59,9 +59,9 @@ class DoubleDownPayoutTest {
   @Test
   void testBlackjackPayoutWithoutDoubleDown() {
     // Set up blackjack
-    game.getPlayerHand().clear();
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS)); // Ace
-    game.getPlayerHand().add(new Card(10, Suit.SPADES)); // 10
+    game.getPlayerHandDirect().clear();
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS)); // Ace
+    game.getPlayerHandDirect().add(new Card(10, Suit.SPADES)); // 10
     
     int originalWager = 10;
     assertFalse(game.hasDoubledDown());
@@ -76,9 +76,9 @@ class DoubleDownPayoutTest {
   @Test
   void testBlackjackBecomesRegularWinAfterDoubleDown() {
     // Set up blackjack initially
-    game.getPlayerHand().clear();
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS)); // Ace  
-    game.getPlayerHand().add(new Card(10, Suit.SPADES)); // 10
+    game.getPlayerHandDirect().clear();
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS)); // Ace  
+    game.getPlayerHandDirect().add(new Card(10, Suit.SPADES)); // 10
     
     assertTrue(game.isBlackjack());
     
@@ -138,9 +138,9 @@ class DoubleDownPayoutTest {
   @Test
   void testBlackjackRoundingWith3to2Payout() {
     // Set up blackjack
-    game.getPlayerHand().clear();
-    game.getPlayerHand().add(new Card(1, Suit.HEARTS)); // Ace
-    game.getPlayerHand().add(new Card(11, Suit.SPADES)); // Jack
+    game.getPlayerHandDirect().clear();
+    game.getPlayerHandDirect().add(new Card(1, Suit.HEARTS)); // Ace
+    game.getPlayerHandDirect().add(new Card(11, Suit.SPADES)); // Jack
     
     assertTrue(game.isBlackjack());
     assertFalse(game.hasDoubledDown());
