@@ -32,7 +32,7 @@ public class BlackjackHandler {
       BlackjackGame game) {
     if (!(level instanceof ServerLevel serverLevel)) return;
 
-    game.startGame(); // Shuffle and reset
+    game.startGame(dealerBe.getNumberOfDecks()); // Shuffle and reset with specified number of decks
     dealerBe.startAuditRecord();
 
     List<Runnable> drawSteps =
@@ -109,7 +109,7 @@ public class BlackjackHandler {
       BlackjackGame game,
       ServerLevel serverLevel) {
 
-    boolean dealerContinues = game.hitDealer();
+    boolean dealerContinues = game.hitDealer(dealerBe.isDealerHitsSoft17());
     updateBlock(level, pos, dealerBe);
 
     if (dealerContinues) {

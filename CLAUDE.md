@@ -110,7 +110,7 @@ CasinoMod is a Minecraft mod built with NeoForge that adds casino gaming functio
 ## Current Development Todos
 
 ### P0 Priorities (Critical - Core Blackjack Features)
-- [ ] Bug: Reshuffle breaks dealing — when the deck empties and reshuffles, the game can bug out. Ensure the reshuffled deck is actually used for subsequent deals without corrupting state or halting the flow.
+- [x] Bug: Reshuffle breaks dealing — when the deck empties and reshuffles, the game can bug out. Ensure the reshuffled deck is actually used for subsequent deals without corrupting state or halting the flow. ✅
 - [x] Add Double Down functionality to blackjack game ✅
 - [x] Display hand values in the blackjack UI ✅
 - [x] Show current bet amount in the dealer screen ✅
@@ -121,13 +121,13 @@ CasinoMod is a Minecraft mod built with NeoForge that adds casino gaming functio
 - [x] Split Pairs functionality for matching cards ✅
 - [ ] Insurance side bet against dealer blackjack
 - [x] Dealer blackjack peek with 10/Ace showing ✅
-- [ ] Multi-deck support (2-8 deck shoes)
-- [ ] Betting limits enforcement (min/max)
+- [x] Multi-deck support (2-8 deck shoes) ✅
+- [ ] Betting limits enforcement (min/max) - settings UI implemented, need game logic enforcement
 
 ### P2 Priorities (Medium - Polish & Quality of Life)
 - [ ] Surrender option for players
-- [ ] Win/Loss statistics tracking
-- [ ] Game history display (recent hands)
+- [x] Win/Loss statistics tracking ✅ (implemented via audit log system)
+- [x] Game history display (recent hands) ✅ (implemented via audit log system)
 - [ ] Card deal animations
 - [ ] Chip system for standardized currency
 

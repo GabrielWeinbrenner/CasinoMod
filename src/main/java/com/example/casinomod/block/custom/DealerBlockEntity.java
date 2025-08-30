@@ -27,6 +27,14 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 public class DealerBlockEntity extends BlockEntity implements MenuProvider {
   private final BlackjackGame blackjackGame = new BlackjackGame();
+
+  // Game settings - per-block configuration
+  private boolean surrenderAllowed = false;
+  private boolean dealerHitsSoft17 = false; // Override global config
+  private int numberOfDecks = 1;
+  private int minBet = 1;
+  private int maxBet = 64;
+
   public final ItemStackHandler inventory =
       new ItemStackHandler(1) {
         @Override
@@ -117,6 +125,15 @@ public class DealerBlockEntity extends BlockEntity implements MenuProvider {
   @Override
   public void saveAdditional(ValueOutput output) {
     blackjackGame.serialize(output.child("game"));
+
+    // Save game settings
+    ValueOutput settings = output.child("settings");
+    settings.putString("surrenderAllowed", String.valueOf(surrenderAllowed));
+    settings.putString("dealerHitsSoft17", String.valueOf(dealerHitsSoft17));
+    settings.putString("numberOfDecks", String.valueOf(numberOfDecks));
+    settings.putString("minBet", String.valueOf(minBet));
+    settings.putString("maxBet", String.valueOf(maxBet));
+
     // Note: lastWager will be synced through inventory updates instead
     // Persist only a recent slice of audit for client preview (pagination handles the rest).
     var list = output.childrenList("auditPreview");
@@ -141,6 +158,25 @@ public class DealerBlockEntity extends BlockEntity implements MenuProvider {
   @Override
   public void loadAdditional(ValueInput input) {
     input.child("game").ifPresent(blackjackGame::deserialize);
+
+    // Load game settings
+    input
+        .child("settings")
+        .ifPresent(
+            settings -> {
+              settings
+                  .getString("surrenderAllowed")
+                  .ifPresent(s -> surrenderAllowed = Boolean.parseBoolean(s));
+              settings
+                  .getString("dealerHitsSoft17")
+                  .ifPresent(s -> dealerHitsSoft17 = Boolean.parseBoolean(s));
+              settings
+                  .getString("numberOfDecks")
+                  .ifPresent(s -> numberOfDecks = Integer.parseInt(s));
+              settings.getString("minBet").ifPresent(s -> minBet = Integer.parseInt(s));
+              settings.getString("maxBet").ifPresent(s -> maxBet = Integer.parseInt(s));
+            });
+
     // Note: lastWager will be synced through inventory updates instead
     // Load preview slice for client-side display; full history remains server-side in memory.
     audit.clear();
@@ -171,5 +207,52 @@ public class DealerBlockEntity extends BlockEntity implements MenuProvider {
                       audit.add(r);
                     }));
     // auditTotal is not used client-side directly; pagination packets provide authoritative totals.
+  }
+
+  // ────────────────────── Game Settings Getters/Setters ──────────────────────
+
+  public boolean isSurrenderAllowed() {
+    return surrenderAllowed;
+  }
+
+  public void setSurrenderAllowed(boolean surrenderAllowed) {
+    this.surrenderAllowed = surrenderAllowed;
+    setChanged();
+  }
+
+  public boolean isDealerHitsSoft17() {
+    return dealerHitsSoft17;
+  }
+
+  public void setDealerHitsSoft17(boolean dealerHitsSoft17) {
+    this.dealerHitsSoft17 = dealerHitsSoft17;
+    setChanged();
+  }
+
+  public int getNumberOfDecks() {
+    return numberOfDecks;
+  }
+
+  public void setNumberOfDecks(int numberOfDecks) {
+    this.numberOfDecks = Math.max(1, Math.min(8, numberOfDecks)); // Clamp to 1-8
+    setChanged();
+  }
+
+  public int getMinBet() {
+    return minBet;
+  }
+
+  public void setMinBet(int minBet) {
+    this.minBet = Math.max(1, minBet);
+    setChanged();
+  }
+
+  public int getMaxBet() {
+    return maxBet;
+  }
+
+  public void setMaxBet(int maxBet) {
+    this.maxBet = Math.max(this.minBet, maxBet);
+    setChanged();
   }
 }

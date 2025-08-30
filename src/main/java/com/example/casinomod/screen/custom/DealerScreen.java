@@ -7,6 +7,7 @@ import com.example.casinomod.blackjack.BlackjackGame;
 import com.example.casinomod.blackjack.Card;
 import com.example.casinomod.network.DealerButtonPacket;
 import com.example.casinomod.network.DealerButtonPacket.Action;
+import com.example.casinomod.network.SettingsPacket;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -39,11 +40,15 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
   private Button doubleDownButton;
   private Button splitButton;
   private Button gearButton;
+  private Button auditButton;
 
   // Audit panel state
   private boolean showAudit = false;
   private int auditPage = 0;
   private static final int AUDIT_PAGE_SIZE = 10;
+
+  // Settings panel state
+  private boolean showSettings = false;
 
   public DealerScreen(DealerMenu menu, Inventory playerInventory, Component title) {
     super(menu, playerInventory, title);
@@ -132,24 +137,43 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
             .build();
     this.addRenderableWidget(splitButton);
 
-    // Gear button (top-right within the GUI bounds)
+    // Settings button (top-left)
     gearButton =
         Button.builder(
                 Component.literal("⚙"),
                 b -> {
-                  showAudit = !showAudit;
-                  if (showAudit) {
-                    auditPage = 0;
-                    requestAuditPage();
+                  showSettings = !showSettings;
+                  if (showSettings) {
+                    showAudit = false; // Close audit if open
                   }
                 })
             .bounds(
-                guiLeft + scaledImageWidth - (int) (25 * scaleFactor) - 8,
+                guiLeft + (int) (8 * scaleFactor),
                 (this.height - scaledImageHeight) / 2 + (int) (8 * scaleFactor),
                 (int) (20 * scaleFactor),
                 (int) (20 * scaleFactor))
             .build();
     this.addRenderableWidget(gearButton);
+
+    // Audit button (top-right)
+    auditButton =
+        Button.builder(
+                Component.literal("≡"),
+                b -> {
+                  showAudit = !showAudit;
+                  if (showAudit) {
+                    auditPage = 0;
+                    requestAuditPage();
+                    showSettings = false; // Close settings if open
+                  }
+                })
+            .bounds(
+                guiLeft + scaledImageWidth - (int) (8 * scaleFactor) - (int) (20 * scaleFactor),
+                (this.height - scaledImageHeight) / 2 + (int) (8 * scaleFactor),
+                (int) (20 * scaleFactor),
+                (int) (20 * scaleFactor))
+            .build();
+    this.addRenderableWidget(auditButton);
 
     // Set initial button states
     updateButtonStates();
@@ -275,12 +299,34 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
     if (showAudit) {
       renderAuditPanel(guiGraphics);
     }
+
+    if (showSettings) {
+      renderSettingsPanel(guiGraphics);
+    }
   }
 
   @Override
   public boolean mouseClicked(double mouseX, double mouseY, int button) {
-    if (!showAudit) return super.mouseClicked(mouseX, mouseY, button);
+    // Handle settings panel clicks
+    if (showSettings) {
+      if (handleSettingsClick(mouseX, mouseY)) {
+        return true;
+      }
+    }
 
+    // Handle audit panel clicks
+    if (showAudit) {
+      if (handleAuditClick(mouseX, mouseY)) {
+        return true;
+      }
+    }
+
+    if (!showAudit && !showSettings) return super.mouseClicked(mouseX, mouseY, button);
+
+    return false;
+  }
+
+  private boolean handleAuditClick(double mouseX, double mouseY) {
     float scaleFactor =
         Math.min(this.width / (float) BASE_GUI_SIZE, this.height / (float) BASE_GUI_SIZE);
     int scaledImageWidth = (int) (BASE_GUI_SIZE * scaleFactor);
@@ -341,7 +387,120 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
       }
     }
 
-    return super.mouseClicked(mouseX, mouseY, button);
+    return false;
+  }
+
+  private boolean handleSettingsClick(double mouseX, double mouseY) {
+    float scaleFactor =
+        Math.min(this.width / (float) BASE_GUI_SIZE, this.height / (float) BASE_GUI_SIZE);
+    int scaledImageWidth = (int) (BASE_GUI_SIZE * scaleFactor);
+    int scaledImageHeight = (int) (BASE_GUI_SIZE * scaleFactor);
+    int guiLeft = (this.width - scaledImageWidth) / 2;
+    int guiTop = (this.height - scaledImageHeight) / 2;
+    int panelX = guiLeft - (int) (60 * scaleFactor);
+    int panelY = guiTop + (int) (20 * scaleFactor);
+    int panelW = scaledImageWidth + (int) (120 * scaleFactor);
+    int panelH = scaledImageHeight - (int) (40 * scaleFactor);
+
+    // Close button click region
+    String closeBtn = "[X]";
+    int closeBtnX = panelX + panelW - this.font.width(closeBtn) - 6;
+    if (mouseX >= closeBtnX
+        && mouseX <= closeBtnX + this.font.width(closeBtn)
+        && mouseY >= panelY + 6
+        && mouseY <= panelY + 6 + this.font.lineHeight) {
+      showSettings = false;
+      return true;
+    }
+
+    // Handle settings panel clicks
+    int settingsY = panelY + 6 + this.font.lineHeight + 10 + this.font.lineHeight + 5;
+
+    // Surrender checkbox - click anywhere on the line
+    String surrenderText = (menu.blockEntity.isSurrenderAllowed() ? "[✓]" : "[ ]") + " Surrender allowed";
+    if (mouseX >= panelX + 6
+        && mouseX <= panelX + 6 + this.font.width(surrenderText)
+        && mouseY >= settingsY
+        && mouseY <= settingsY + this.font.lineHeight) {
+      sendSettingsUpdate(
+          !menu.blockEntity.isSurrenderAllowed(),
+          menu.blockEntity.isDealerHitsSoft17(),
+          menu.blockEntity.getNumberOfDecks(),
+          menu.blockEntity.getMinBet(),
+          menu.blockEntity.getMaxBet());
+      return true;
+    }
+    settingsY += this.font.lineHeight + 2;
+
+    // Soft 17 checkbox - click anywhere on the line  
+    String soft17Text = (menu.blockEntity.isDealerHitsSoft17() ? "[✓]" : "[ ]") + " Dealer hits soft 17";
+    if (mouseX >= panelX + 6
+        && mouseX <= panelX + 6 + this.font.width(soft17Text)
+        && mouseY >= settingsY
+        && mouseY <= settingsY + this.font.lineHeight) {
+      sendSettingsUpdate(
+          menu.blockEntity.isSurrenderAllowed(),
+          !menu.blockEntity.isDealerHitsSoft17(),
+          menu.blockEntity.getNumberOfDecks(),
+          menu.blockEntity.getMinBet(),
+          menu.blockEntity.getMaxBet());
+      return true;
+    }
+    settingsY += this.font.lineHeight + 2;
+
+    // Deck count controls
+    int decksX = panelX + 6 + this.font.width("Number of decks: ");
+    int countX = decksX + this.font.width("[-] ");
+    int plusX = countX + this.font.width(String.valueOf(menu.blockEntity.getNumberOfDecks())) + 2;
+
+    // [-] button
+    if (mouseX >= decksX
+        && mouseX <= decksX + this.font.width("[-]")
+        && mouseY >= settingsY
+        && mouseY <= settingsY + this.font.lineHeight) {
+      int newDecks = Math.max(1, menu.blockEntity.getNumberOfDecks() - 1);
+      sendSettingsUpdate(
+          menu.blockEntity.isSurrenderAllowed(),
+          menu.blockEntity.isDealerHitsSoft17(),
+          newDecks,
+          menu.blockEntity.getMinBet(),
+          menu.blockEntity.getMaxBet());
+      return true;
+    }
+
+    // [+] button
+    if (mouseX >= plusX
+        && mouseX <= plusX + this.font.width("[+]")
+        && mouseY >= settingsY
+        && mouseY <= settingsY + this.font.lineHeight) {
+      int newDecks = Math.min(8, menu.blockEntity.getNumberOfDecks() + 1);
+      sendSettingsUpdate(
+          menu.blockEntity.isSurrenderAllowed(),
+          menu.blockEntity.isDealerHitsSoft17(),
+          newDecks,
+          menu.blockEntity.getMinBet(),
+          menu.blockEntity.getMaxBet());
+      return true;
+    }
+
+    return false;
+  }
+
+  private void sendSettingsUpdate(
+      boolean surrenderAllowed,
+      boolean dealerHitsSoft17,
+      int numberOfDecks,
+      int minBet,
+      int maxBet) {
+    SettingsPacket packet =
+        new SettingsPacket(
+            menu.blockEntity.getBlockPos(),
+            surrenderAllowed,
+            dealerHitsSoft17,
+            numberOfDecks,
+            minBet,
+            maxBet);
+    ClientPacketDistributor.sendToServer(packet);
   }
 
   @Override
@@ -686,5 +845,75 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
     } else {
       g.drawString(this.font, "Loading...", panelX + 6, y, 0xFFFFFFFF, false);
     }
+  }
+
+  private void renderSettingsPanel(GuiGraphics g) {
+    float scaleFactor =
+        Math.min(this.width / (float) BASE_GUI_SIZE, this.height / (float) BASE_GUI_SIZE);
+    int scaledImageWidth = (int) (BASE_GUI_SIZE * scaleFactor);
+    int scaledImageHeight = (int) (BASE_GUI_SIZE * scaleFactor);
+    int guiLeft = (this.width - scaledImageWidth) / 2;
+    int guiTop = (this.height - scaledImageHeight) / 2;
+    int panelX = guiLeft - (int) (60 * scaleFactor);
+    int panelY = guiTop + (int) (20 * scaleFactor);
+    int panelW = scaledImageWidth + (int) (120 * scaleFactor);
+    int panelH = scaledImageHeight - (int) (40 * scaleFactor);
+
+    // Semi-transparent dark background
+    g.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xCC000000);
+
+    // Border
+    g.fill(panelX, panelY, panelX + panelW, panelY + 1, 0xFF555555);
+    g.fill(panelX, panelY + panelH - 1, panelX + panelW, panelY + panelH, 0xFF555555);
+    g.fill(panelX, panelY, panelX + 1, panelY + panelH, 0xFF555555);
+    g.fill(panelX + panelW - 1, panelY, panelX + panelW, panelY + panelH, 0xFF555555);
+
+    // Title and close button
+    g.drawString(this.font, "Blackjack Settings", panelX + 6, panelY + 6, 0xFFFFFFFF, false);
+    String closeBtn = "[X]";
+    int closeBtnX = panelX + panelW - this.font.width(closeBtn) - 6;
+    g.drawString(this.font, closeBtn, closeBtnX, panelY + 6, 0xFFFF5555, false);
+
+    int y = panelY + 6 + this.font.lineHeight + 10;
+
+    // Game settings controls
+    g.drawString(this.font, "Game Settings:", panelX + 6, y, 0xFFFFFF00, false);
+    y += this.font.lineHeight + 5;
+
+    // Surrender setting
+    String surrenderCheck = menu.blockEntity.isSurrenderAllowed() ? "[✓]" : "[ ]";
+    g.drawString(
+        this.font, surrenderCheck + " Surrender allowed", panelX + 6, y, 0xFFAAAAAA, false);
+    y += this.font.lineHeight + 2;
+
+    // Soft 17 setting
+    String soft17Check = menu.blockEntity.isDealerHitsSoft17() ? "[✓]" : "[ ]";
+    g.drawString(this.font, soft17Check + " Dealer hits soft 17", panelX + 6, y, 0xFFAAAAAA, false);
+    y += this.font.lineHeight + 2;
+
+    // Number of decks with +/- controls
+    g.drawString(this.font, "Number of decks: ", panelX + 6, y, 0xFFAAAAAA, false);
+    int decksX = panelX + 6 + this.font.width("Number of decks: ");
+    g.drawString(this.font, "[-]", decksX, y, 0xFF5555FF, false);
+    int countX = decksX + this.font.width("[-] ");
+    g.drawString(
+        this.font,
+        String.valueOf(menu.blockEntity.getNumberOfDecks()),
+        countX,
+        y,
+        0xFFFFFFFF,
+        false);
+    int plusX = countX + this.font.width(String.valueOf(menu.blockEntity.getNumberOfDecks())) + 2;
+    g.drawString(this.font, "[+]", plusX, y, 0xFF5555FF, false);
+    y += this.font.lineHeight + 2;
+
+    // Bet limits
+    g.drawString(
+        this.font,
+        "Bet limits: " + menu.blockEntity.getMinBet() + "-" + menu.blockEntity.getMaxBet(),
+        panelX + 6,
+        y,
+        0xFFAAAAAA,
+        false);
   }
 }

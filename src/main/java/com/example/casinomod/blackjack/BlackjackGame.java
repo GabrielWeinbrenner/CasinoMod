@@ -32,6 +32,7 @@ public class BlackjackGame implements ValueIOSerializable {
   // ────────────────────── Fields ──────────────────────
 
   private final List<Card> deck = new ArrayList<>();
+  private int numberOfDecks = 1;
   private final List<List<Card>> playerHands = new ArrayList<>();
   private final List<Card> dealerHand = new ArrayList<>();
   private final Random random = new Random();
@@ -48,6 +49,7 @@ public class BlackjackGame implements ValueIOSerializable {
     output.putString("doubledDown", String.valueOf(doubledDown));
     output.putString("hasSplit", String.valueOf(hasSplit));
     output.putString("currentHandIndex", String.valueOf(currentHandIndex));
+    output.putString("numberOfDecks", String.valueOf(numberOfDecks));
 
     ValueOutput.ValueOutputList handsListOutput = output.childrenList("playerHands");
     for (List<Card> hand : playerHands) {
@@ -84,6 +86,16 @@ public class BlackjackGame implements ValueIOSerializable {
             s -> {
               try {
                 this.currentHandIndex = Integer.parseInt(s);
+              } catch (NumberFormatException ignored) {
+              }
+            });
+
+    input
+        .getString("numberOfDecks")
+        .ifPresent(
+            s -> {
+              try {
+                this.numberOfDecks = Math.max(1, Math.min(8, Integer.parseInt(s)));
               } catch (NumberFormatException ignored) {
               }
             });
@@ -139,7 +151,12 @@ public class BlackjackGame implements ValueIOSerializable {
   // ─────────────── Game Lifecycle ───────────────
 
   public void startGame() {
-    CasinoMod.LOGGER.debug("[BlackjackGame] Initializing game (deck only)");
+    startGame(numberOfDecks);
+  }
+
+  public void startGame(int deckCount) {
+    CasinoMod.LOGGER.debug("[BlackjackGame] Initializing game with {} deck(s)", deckCount);
+    this.numberOfDecks = Math.max(1, Math.min(8, deckCount)); // Clamp to 1-8 decks
     deck.clear();
     playerHands.clear();
     playerHands.add(new ArrayList<>()); // Initialize first hand
@@ -149,14 +166,20 @@ public class BlackjackGame implements ValueIOSerializable {
     hasSplit = false;
     currentHandIndex = 0;
 
-    for (int i = 1; i <= 13; i++) {
-      for (Suit suit : Suit.values()) {
-        deck.add(new Card(i, suit));
+    // Create multiple decks
+    for (int deckNum = 0; deckNum < this.numberOfDecks; deckNum++) {
+      for (int i = 1; i <= 13; i++) {
+        for (Suit suit : Suit.values()) {
+          deck.add(new Card(i, suit));
+        }
       }
     }
 
     Collections.shuffle(deck, random);
-    CasinoMod.LOGGER.debug("[BlackjackGame] Deck shuffled with {} cards", deck.size());
+    CasinoMod.LOGGER.debug(
+        "[BlackjackGame] Deck shuffled with {} cards from {} deck(s)",
+        deck.size(),
+        this.numberOfDecks);
   }
 
   public void reset() {
@@ -522,14 +545,19 @@ public class BlackjackGame implements ValueIOSerializable {
   public Card draw() {
     if (deck.isEmpty()) {
       CasinoMod.LOGGER.error("[BlackjackGame] Attempted to draw from empty deck! Reshuffling...");
-      // Emergency reshuffle - create new deck and shuffle
-      for (int i = 1; i <= 13; i++) {
-        for (Suit suit : Suit.values()) {
-          deck.add(new Card(i, suit));
+      // Emergency reshuffle - create new deck(s) and shuffle
+      for (int deckNum = 0; deckNum < numberOfDecks; deckNum++) {
+        for (int i = 1; i <= 13; i++) {
+          for (Suit suit : Suit.values()) {
+            deck.add(new Card(i, suit));
+          }
         }
       }
       Collections.shuffle(deck, random);
-      CasinoMod.LOGGER.info("[BlackjackGame] Emergency reshuffled deck with {} cards", deck.size());
+      CasinoMod.LOGGER.info(
+          "[BlackjackGame] Emergency reshuffled deck with {} cards from {} deck(s)",
+          deck.size(),
+          numberOfDecks);
     }
 
     Card card = deck.removeFirst();
@@ -709,5 +737,15 @@ public class BlackjackGame implements ValueIOSerializable {
    */
   public List<Card> getDealerHandDirect() {
     return dealerHand;
+  }
+
+  // ────────────────────── Number of Decks ──────────────────────
+
+  public int getNumberOfDecks() {
+    return numberOfDecks;
+  }
+
+  public void setNumberOfDecks(int numberOfDecks) {
+    this.numberOfDecks = Math.max(1, Math.min(8, numberOfDecks));
   }
 }

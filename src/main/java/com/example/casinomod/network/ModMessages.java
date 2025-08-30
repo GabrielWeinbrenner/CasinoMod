@@ -37,5 +37,10 @@ public class ModMessages {
         AuditPagePacket.TYPE,
         AuditPagePacket.STREAM_CODEC,
         (packet, context) -> AuditPageClientHandler.handle(packet));
+
+    registrar.playToServer(
+        SettingsPacket.TYPE,
+        SettingsPacket.CODEC,
+        (packet, context) -> SettingsHandler.getInstance().handle(packet, context));
   }
 }
