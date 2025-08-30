@@ -38,6 +38,12 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
   private Button standButton;
   private Button doubleDownButton;
   private Button splitButton;
+  private Button gearButton;
+
+  // Audit panel state
+  private boolean showAudit = false;
+  private int auditPage = 0;
+  private static final int AUDIT_PAGE_SIZE = 10;
 
   public DealerScreen(DealerMenu menu, Inventory playerInventory, Component title) {
     super(menu, playerInventory, title);
@@ -125,6 +131,25 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
                 (int) (20 * scaleFactor))
             .build();
     this.addRenderableWidget(splitButton);
+
+    // Gear button (top-right within the GUI bounds)
+    gearButton =
+        Button.builder(
+                Component.literal("⚙"),
+                b -> {
+                  showAudit = !showAudit;
+                  if (showAudit) {
+                    auditPage = 0;
+                    requestAuditPage();
+                  }
+                })
+            .bounds(
+                guiLeft + scaledImageWidth - (int) (25 * scaleFactor) - 8,
+                (this.height - scaledImageHeight) / 2 + (int) (8 * scaleFactor),
+                (int) (20 * scaleFactor),
+                (int) (20 * scaleFactor))
+            .build();
+    this.addRenderableWidget(gearButton);
 
     // Set initial button states
     updateButtonStates();
@@ -246,6 +271,77 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
         guiGraphics.drawString(this.font, noBetText, noBetX, noBetY, 0xFFFFFFFF, false);
       }
     }
+
+    if (showAudit) {
+      renderAuditPanel(guiGraphics);
+    }
+  }
+
+  @Override
+  public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    if (!showAudit) return super.mouseClicked(mouseX, mouseY, button);
+
+    float scaleFactor =
+        Math.min(this.width / (float) BASE_GUI_SIZE, this.height / (float) BASE_GUI_SIZE);
+    int scaledImageWidth = (int) (BASE_GUI_SIZE * scaleFactor);
+    int scaledImageHeight = (int) (BASE_GUI_SIZE * scaleFactor);
+    int guiLeft = (this.width - scaledImageWidth) / 2;
+    int guiTop = (this.height - scaledImageHeight) / 2;
+    int panelX = guiLeft - (int) (60 * scaleFactor);
+    int panelY = guiTop + (int) (20 * scaleFactor);
+    int panelW = scaledImageWidth + (int) (120 * scaleFactor);
+    int panelH = scaledImageHeight - (int) (40 * scaleFactor);
+
+    // Close button click region
+    String closeBtn = "[X]";
+    int closeBtnX = panelX + panelW - this.font.width(closeBtn) - 6;
+    if (mouseX >= closeBtnX
+        && mouseX <= closeBtnX + this.font.width(closeBtn)
+        && mouseY >= panelY + 6
+        && mouseY <= panelY + 6 + this.font.lineHeight) {
+      showAudit = false;
+      return true;
+    }
+
+    var pd =
+        com.example.casinomod.network.AuditPageClientHandler.get(menu.blockEntity.getBlockPos());
+    if (pd != null) {
+      int total = pd.total();
+      int totalPages = (total + AUDIT_PAGE_SIZE - 1) / AUDIT_PAGE_SIZE;
+      boolean canPrev = auditPage > 0;
+      boolean canNext = auditPage + 1 < totalPages;
+
+      int navY = panelY + panelH - 18;
+      int prevW = this.font.width("< Prev");
+      int nextW = this.font.width("Next >");
+      int gap = this.font.width("   ");
+      int navTotalW = prevW + gap + nextW;
+      int navX = panelX + panelW - navTotalW - 8;
+
+      // Click regions for prev/next
+      if (canPrev
+          && mouseX >= navX
+          && mouseX <= navX + prevW
+          && mouseY >= navY
+          && mouseY <= navY + this.font.lineHeight) {
+        auditPage--;
+        requestAuditPage();
+        return true;
+      }
+
+      int nextX = navX + prevW + gap;
+      if (canNext
+          && mouseX >= nextX
+          && mouseX <= nextX + nextW
+          && mouseY >= navY
+          && mouseY <= navY + this.font.lineHeight) {
+        auditPage++;
+        requestAuditPage();
+        return true;
+      }
+    }
+
+    return super.mouseClicked(mouseX, mouseY, button);
   }
 
   @Override
@@ -446,5 +542,149 @@ public class DealerScreen extends AbstractContainerScreen<DealerMenu> {
   private static ResourceLocation getCardTexture(String cardName) {
     String path = "textures/gui/dealer_block/cards/" + cardName + ".png";
     return ResourceLocation.fromNamespaceAndPath(CasinoMod.MODID, path);
+  }
+
+  private void requestAuditPage() {
+    ClientPacketDistributor.sendToServer(
+        new com.example.casinomod.network.AuditRequestPacket(
+            menu.blockEntity.getBlockPos(), auditPage, AUDIT_PAGE_SIZE));
+  }
+
+  private void renderAuditPanel(GuiGraphics g) {
+    float scaleFactor =
+        Math.min(this.width / (float) BASE_GUI_SIZE, this.height / (float) BASE_GUI_SIZE);
+    int scaledImageWidth = (int) (BASE_GUI_SIZE * scaleFactor);
+    int scaledImageHeight = (int) (BASE_GUI_SIZE * scaleFactor);
+    int guiLeft = (this.width - scaledImageWidth) / 2;
+    int guiTop = (this.height - scaledImageHeight) / 2;
+
+    int panelX = guiLeft - (int) (60 * scaleFactor);
+    int panelY = guiTop + (int) (20 * scaleFactor);
+    int panelW = scaledImageWidth + (int) (120 * scaleFactor);
+    int panelH = scaledImageHeight - (int) (40 * scaleFactor);
+
+    g.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xAA000000);
+
+    // Header with close button
+    String header = "Audit Log (page " + (auditPage + 1) + ")";
+    g.drawString(this.font, header, panelX + 6, panelY + 6, 0xFFFFFFFF, false);
+
+    // Close button (X) in top-right of panel
+    String closeBtn = "[X]";
+    int closeBtnX = panelX + panelW - this.font.width(closeBtn) - 6;
+    g.drawString(this.font, closeBtn, closeBtnX, panelY + 6, 0xFFFF5555, false);
+
+    // Fetch latest page from client cache
+    var pd =
+        com.example.casinomod.network.AuditPageClientHandler.get(menu.blockEntity.getBlockPos());
+    int y = panelY + 20;
+    int lineH = this.font.lineHeight + 2;
+    java.time.format.DateTimeFormatter fmt =
+        java.time.format.DateTimeFormatter.ofPattern("MM-dd-yy HH:mm:ss")
+            .withZone(java.time.ZoneId.systemDefault());
+    int logsEndY = y; // Track where logs end
+    if (pd != null && pd.records() != null) {
+      int idx = 0;
+      for (com.example.casinomod.blackjack.GameRecord r : pd.records()) {
+        // Reserve space for stats (4 lines * lineH + some padding)
+        int statsSpace = 4 * lineH + 20;
+        if (panelY + panelH - (y + idx * lineH) < statsSpace + 50) break;
+
+        String ts = fmt.format(java.time.Instant.ofEpochMilli(r.startEpochMs));
+        String res = r.result.name();
+        String bet = String.valueOf(r.betCount);
+        String pay = String.valueOf(r.payoutCount);
+        String flags = (r.doubledDown ? "DD " : "") + (r.split ? "SP" : "");
+        String scores = "P:" + r.playerScores.toString() + " D:" + r.dealerScore;
+        String line =
+            ts + " | " + res + " | bet " + bet + " → " + pay + " | " + flags + " | " + scores;
+
+        g.drawString(this.font, line, panelX + 6, y + idx * lineH, 0xFFE0E0E0, false);
+        idx++;
+        logsEndY = y + idx * lineH;
+      }
+
+      int total = pd.total();
+      int totalPages = (total + AUDIT_PAGE_SIZE - 1) / AUDIT_PAGE_SIZE;
+      boolean canPrev = auditPage > 0;
+      boolean canNext = auditPage + 1 < totalPages;
+      // Calculate stats from ALL audit records (not just current page)
+      int wins = 0, losses = 0, draws = 0;
+      int totalWagered = 0, totalWon = 0;
+      int ddGames = 0, splitGames = 0;
+
+      // Request full audit data for stats calculation
+      var fullAudit = menu.blockEntity.getAudit();
+      for (var record : fullAudit) {
+        switch (record.result) {
+          case WIN -> wins++;
+          case LOSE -> losses++;
+          case DRAW -> draws++;
+        }
+        totalWagered += record.betCount;
+        totalWon += record.payoutCount;
+        if (record.doubledDown) ddGames++;
+        if (record.split) splitGames++;
+      }
+
+      // Stats section - position dynamically after logs
+      int statsY = Math.max(logsEndY + 10, panelY + panelH - 90);
+      g.drawString(this.font, "--- Stats ---", panelX + 6, statsY, 0xFFFFFF00, false);
+      statsY += this.font.lineHeight + 2;
+
+      String winRate = total > 0 ? String.format("%.1f%%", (wins * 100.0 / total)) : "0%";
+      g.drawString(
+          this.font,
+          "W:" + wins + " L:" + losses + " D:" + draws + " (" + winRate + ")",
+          panelX + 6,
+          statsY,
+          0xFFAAAAFF,
+          false);
+      statsY += this.font.lineHeight;
+
+      int netProfit = totalWon - totalWagered;
+      String profitColor = netProfit >= 0 ? "0xFF55FF55" : "0xFFFF5555";
+      g.drawString(
+          this.font,
+          "Net: "
+              + (netProfit >= 0 ? "+" : "")
+              + netProfit
+              + " (Wagered:"
+              + totalWagered
+              + " Won:"
+              + totalWon
+              + ")",
+          panelX + 6,
+          statsY,
+          Integer.parseUnsignedInt(profitColor.substring(2), 16),
+          false);
+      statsY += this.font.lineHeight;
+
+      g.drawString(
+          this.font,
+          "DD:" + ddGames + " Split:" + splitGames,
+          panelX + 6,
+          statsY,
+          0xFFCCCCCC,
+          false);
+
+      // Show results count and navigation with range display
+      int startRange = total == 0 ? 0 : Math.max(1, total - (auditPage + 1) * AUDIT_PAGE_SIZE + 1);
+      int endRange = Math.min(total, total - auditPage * AUDIT_PAGE_SIZE);
+      String resultsInfo;
+      if (total == 0) {
+        resultsInfo = "No results";
+      } else {
+        resultsInfo = "Showing " + startRange + "-" + endRange + " of " + total + " total results";
+      }
+      g.drawString(this.font, resultsInfo, panelX + 6, panelY + panelH - 30, 0xFFCCCCCC, false);
+
+      String nav = (canPrev ? "< Prev" : "     ") + "   " + (canNext ? "Next >" : "     ");
+      int navY = panelY + panelH - 18;
+      int navX = panelX + panelW - this.font.width(nav) - 8;
+      g.drawString(this.font, nav, navX, navY, 0xFFFFFFFF, false);
+    } else {
+      g.drawString(this.font, "Loading...", panelX + 6, y, 0xFFFFFFFF, false);
+    }
   }
 }

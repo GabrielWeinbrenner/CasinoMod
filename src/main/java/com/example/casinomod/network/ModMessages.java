@@ -23,5 +23,19 @@ public class ModMessages {
             DealerButtonPacket.handle(packet, player);
           }
         });
+
+    registrar.playToServer(
+        AuditRequestPacket.TYPE,
+        AuditRequestPacket.STREAM_CODEC,
+        (packet, context) -> {
+          if (context.player() instanceof ServerPlayer player) {
+            AuditRequestHandler.handle(packet, player);
+          }
+        });
+
+    registrar.playToClient(
+        AuditPagePacket.TYPE,
+        AuditPagePacket.STREAM_CODEC,
+        (packet, context) -> AuditPageClientHandler.handle(packet));
   }
 }

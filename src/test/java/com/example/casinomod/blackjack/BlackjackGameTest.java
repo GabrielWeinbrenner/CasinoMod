@@ -245,6 +245,8 @@ class BlackjackGameTest {
   void testPlayerBustTransitionsToFinished() {
     game.startGame();
 
+    // Clear the default dealt hand and manually set up bust scenario
+    game.getPlayerHandDirect().clear();
     game.getPlayerHandDirect().add(new Card(10, Suit.HEARTS));
     game.getPlayerHandDirect().add(new Card(10, Suit.DIAMONDS));
 

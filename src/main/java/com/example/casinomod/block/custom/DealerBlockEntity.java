@@ -3,6 +3,7 @@ package com.example.casinomod.block.custom;
 import javax.annotation.Nullable;
 
 import com.example.casinomod.blackjack.BlackjackGame;
+import com.example.casinomod.blackjack.GameRecord;
 import com.example.casinomod.block.entity.ModBlockEntities;
 import com.example.casinomod.screen.custom.DealerMenu;
 
@@ -52,6 +53,8 @@ public class DealerBlockEntity extends BlockEntity implements MenuProvider {
       };
 
   private ItemStack lastWager = ItemStack.EMPTY;
+  private final java.util.List<GameRecord> audit = new java.util.ArrayList<>();
+  private GameRecord currentRecord = null;
 
   public void setLastWager(ItemStack wager) {
     this.lastWager = wager.copy();
@@ -59,6 +62,27 @@ public class DealerBlockEntity extends BlockEntity implements MenuProvider {
 
   public ItemStack getLastWager() {
     return lastWager;
+  }
+
+  public void startAuditRecord() {
+    currentRecord = new GameRecord();
+    currentRecord.startEpochMs = System.currentTimeMillis();
+  }
+
+  public void finalizeAuditRecord(GameRecord record) {
+    audit.add(record);
+    currentRecord = null;
+  }
+
+  public GameRecord getOrCreateCurrentRecord() {
+    if (currentRecord == null) {
+      startAuditRecord();
+    }
+    return currentRecord;
+  }
+
+  public java.util.List<GameRecord> getAudit() {
+    return audit;
   }
 
   public DealerBlockEntity(BlockPos pos, BlockState state) {
@@ -94,11 +118,58 @@ public class DealerBlockEntity extends BlockEntity implements MenuProvider {
   public void saveAdditional(ValueOutput output) {
     blackjackGame.serialize(output.child("game"));
     // Note: lastWager will be synced through inventory updates instead
+    // Persist only a recent slice of audit for client preview (pagination handles the rest).
+    var list = output.childrenList("auditPreview");
+    int from = Math.max(0, audit.size() - 50);
+    for (int i = from; i < audit.size(); i++) {
+      GameRecord r = audit.get(i);
+      var child = list.addChild();
+      child.putLong("s", r.startEpochMs);
+      child.putLong("e", r.endEpochMs);
+      child.putInt("res", r.result.ordinal());
+      child.putInt("bet", r.betCount);
+      child.putInt("pay", r.payoutCount);
+      child.putString("dd", String.valueOf(r.doubledDown));
+      child.putString("sp", String.valueOf(r.split));
+      child.putInt("ds", r.dealerScore);
+      var ps = child.childrenList("ps");
+      for (int v : r.playerScores) ps.addChild().putInt("v", v);
+    }
+    output.putInt("auditTotal", audit.size());
   }
 
   @Override
   public void loadAdditional(ValueInput input) {
     input.child("game").ifPresent(blackjackGame::deserialize);
     // Note: lastWager will be synced through inventory updates instead
+    // Load preview slice for client-side display; full history remains server-side in memory.
+    audit.clear();
+    input
+        .childrenList("auditPreview")
+        .ifPresent(
+            list ->
+                list.forEach(
+                    child -> {
+                      GameRecord r = new GameRecord();
+                      child.getLong("s").ifPresent(v -> r.startEpochMs = v);
+                      child.getLong("e").ifPresent(v -> r.endEpochMs = v);
+                      child
+                          .getInt("res")
+                          .ifPresent(v -> r.result = BlackjackGame.Result.values()[v]);
+                      child.getInt("bet").ifPresent(v -> r.betCount = v);
+                      child.getInt("pay").ifPresent(v -> r.payoutCount = v);
+                      child.getString("dd").ifPresent(s -> r.doubledDown = Boolean.parseBoolean(s));
+                      child.getString("sp").ifPresent(s -> r.split = Boolean.parseBoolean(s));
+                      child.getInt("ds").ifPresent(v -> r.dealerScore = v);
+                      child
+                          .childrenList("ps")
+                          .ifPresent(
+                              ps ->
+                                  ps.forEach(
+                                      p ->
+                                          p.getInt("v").ifPresent(val -> r.playerScores.add(val))));
+                      audit.add(r);
+                    }));
+    // auditTotal is not used client-side directly; pagination packets provide authoritative totals.
   }
 }

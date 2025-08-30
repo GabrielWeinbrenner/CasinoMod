@@ -33,6 +33,7 @@ public class BlackjackHandler {
     if (!(level instanceof ServerLevel serverLevel)) return;
 
     game.startGame(); // Shuffle and reset
+    dealerBe.startAuditRecord();
 
     List<Runnable> drawSteps =
         List.of(
@@ -132,11 +133,42 @@ public class BlackjackHandler {
       BlockPos pos,
       DealerBlockEntity dealerBe,
       BlackjackGame game) {
+    // Build audit record
+    var rec = dealerBe.getOrCreateCurrentRecord();
+    rec.endEpochMs = System.currentTimeMillis();
+    rec.result = result;
+    rec.doubledDown = game.hasDoubledDown();
+    rec.split = game.hasSplit();
+    rec.dealerScore = game.getHandValue(game.getDealerHand());
+    rec.playerScores.clear();
+    for (java.util.List<com.example.casinomod.blackjack.Card> h : game.getAllPlayerHands()) {
+      rec.playerScores.add(game.getHandValue(h));
+    }
+
     switch (result) {
       case WIN -> handleWin(player, level, pos, dealerBe, game);
       case LOSE -> handleLoss(player, level, pos, dealerBe);
       case DRAW -> handleDraw(player, level, pos, dealerBe);
     }
+    // After payouts/returns potentially adjusted counts
+    var wager = dealerBe.inventory.getStackInSlot(0);
+    rec.betCount = dealerBe.getLastWager().isEmpty() ? 0 : dealerBe.getLastWager().getCount();
+    // For win/draw, payout already returned or moved; we record the computed return amount when win
+    if (result == BlackjackGame.Result.WIN) {
+      int effective = rec.doubledDown ? rec.betCount * 2 : rec.betCount;
+      if (game.isBlackjack() && !rec.doubledDown) {
+        rec.payoutCount = effective + (rec.betCount * 3 / 2);
+      } else {
+        rec.payoutCount = effective * 2;
+      }
+    } else if (result == BlackjackGame.Result.DRAW) {
+      rec.payoutCount = rec.betCount; // returned
+    } else {
+      rec.payoutCount = 0;
+    }
+
+    dealerBe.finalizeAuditRecord(rec);
+
     ServerTaskScheduler.schedule(
         Objects.requireNonNull(level.getServer()),
         () -> {
